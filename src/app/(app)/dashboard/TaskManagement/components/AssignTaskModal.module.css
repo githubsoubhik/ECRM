@@ -1,0 +1,351 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+  height: 100%;
+  color: #161c3a;
+  font-family: var(--font-inter), Inter, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+}
+
+.handle {
+  display: block;
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: #d5d9e3;
+  margin: 10px auto 2px;
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 22px 24px 8px;
+}
+
+.headerIcon {
+  display: grid;
+  place-items: center;
+  color: #161c3a;
+  margin-top: 1px;
+}
+
+.headerIcon svg {
+  font-size: 28px;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.subheading {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #5b6280;
+}
+
+.close {
+  margin: -6px -8px 0 0 !important;
+  color: #161c3a !important;
+}
+
+/* ---------- Body / grid ---------- */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 24px 6px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 14px;
+  grid-template-areas:
+    'title    dept'
+    'assign   priority'
+    'desc     desc'
+    'date     time'
+    'files    files'
+    'notify   notify';
+}
+
+.aTitle { grid-area: title; }
+.aDept { grid-area: dept; }
+.aAssign { grid-area: assign; }
+.aPriority { grid-area: priority; }
+.aDesc { grid-area: desc; }
+.aDate { grid-area: date; }
+.aTime { grid-area: time; }
+.aFiles { grid-area: files; }
+.aNotify { grid-area: notify; }
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 7px;
+  color: #161c3a;
+}
+
+.label > span {
+  color: #e0364f;
+}
+
+.placeholder {
+  color: #5b6280;
+}
+
+.error {
+  margin: 5px 2px 0;
+  font-size: 12px;
+  color: #e0364f;
+}
+
+/* ---------- Assign To options ---------- */
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.optionText small {
+  font-size: 11.5px;
+  color: #5b6280;
+}
+
+.teamIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eaf3ef;
+  color: #12372f;
+}
+
+.selectedEmp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Priority ---------- */
+.priorityRow {
+  display: flex;
+  gap: 8px;
+}
+
+.priorityBtn {
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px !important;
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  border: 1.5px solid transparent !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prLow {
+  background: #e1eefd !important;
+  color: #2d7be0 !important;
+}
+
+.prMedium {
+  background: #fff0d4 !important;
+  color: #d48806 !important;
+}
+
+.prHigh {
+  background: #fde1e5 !important;
+  color: #e0364f !important;
+}
+
+.prSelected {
+  border-color: currentColor !important;
+}
+
+.prIcon {
+  font-size: 16px !important;
+}
+
+.prDot {
+  font-size: 10px !important;
+}
+
+/* ---------- Description ---------- */
+.descWrap {
+  position: relative;
+}
+
+.counter {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  font-size: 11.5px;
+  color: #8a90a8;
+  pointer-events: none;
+}
+
+/* ---------- Dropzone ---------- */
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 1.5px dashed #c9cedb;
+  border-radius: 10px;
+  background: #fafbfd;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone:hover,
+.dropzone:focus-visible,
+.dropzoneActive {
+  border-color: #12372f;
+  background: #f1f7f4;
+  outline: none;
+}
+
+.clip {
+  font-size: 24px !important;
+  color: #161c3a;
+  transform: rotate(40deg);
+}
+
+.dropTitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.dropHint {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: #5b6280;
+}
+
+.fileList {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid #e7e9f0;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.fileIcon {
+  color: #12372f;
+}
+
+.fileName {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: #5b6280;
+}
+
+/* ---------- Notify ---------- */
+.notify {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.notifyTitle {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.notifyHint {
+  display: block;
+  font-size: 11.5px;
+  color: #5b6280;
+  margin-top: 2px;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  background: #ffffff;
+}
+
+/* ---------- Mobile bottom sheet ---------- */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 18px 6px;
+  }
+
+  .heading {
+    font-size: 19px;
+  }
+
+  .body {
+    padding: 8px 18px 4px;
+  }
+
+  .grid {
+    column-gap: 10px;
+    row-gap: 12px;
+    grid-template-areas:
+      'title    title'
+      'assign   dept'
+      'priority priority'
+      'desc     desc'
+      'date     time'
+      'files    files'
+      'notify   notify';
+  }
+
+  .priorityBtn {
+    padding: 0 18px !important;
+  }
+
+  .footer {
+    padding: 12px 18px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}

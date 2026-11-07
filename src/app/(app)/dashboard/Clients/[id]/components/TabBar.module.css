@@ -1,0 +1,93 @@
+/* Path: src/app/dashboard/Clients/[id]/components/TabBar.module.css
+   Responsive tab bar – works together with the .tabs / .tab / .tabActive / .menu
+   styles that already live in ClientDetails.module.css.                          */
+
+/* The tab row takes all free space next to the date picker and never scrolls –
+   tabs that don't fit are moved into "More" by ClientHeader.tsx               */
+.row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 0%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: visible !important;
+}
+
+.tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.moreWrap {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.moreBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chev {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.chevOpen {
+  transform: rotate(180deg);
+}
+
+/* Dropdown list */
+.menu {
+  min-width: 190px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  z-index: 60;
+}
+
+.menuItem {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.menuActive {
+  color: #1f2ff2 !important;
+  font-weight: 600 !important;
+  background: #f5f5ff !important;
+}
+
+.menuCheck {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Hidden measuring copy (same classes as the real tabs, so widths match) */
+.measure {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: max-content !important;
+  max-width: none !important;
+  height: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Before the first measurement: clip instead of spilling over the date picker */
+.pending {
+  overflow: hidden !important;
+}

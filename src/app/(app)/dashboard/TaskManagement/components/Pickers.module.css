@@ -1,0 +1,92 @@
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px 0 14px;
+  border: 1px solid #e3e6ee;
+  border-radius: 8px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  color: #161c3a;
+  justify-content: flex-start;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.trigger:hover {
+  border-color: #c6cbda;
+}
+
+.trigger:focus-visible,
+.triggerActive {
+  border-color: #12372f;
+  box-shadow: 0 0 0 1px #12372f inset;
+  outline: none;
+}
+
+.triggerError {
+  border-color: #e0364f;
+}
+
+.lead {
+  font-size: 19px !important;
+  color: #161c3a;
+  flex-shrink: 0;
+}
+
+.value,
+.placeholder {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  font-weight: 500;
+}
+
+.placeholder {
+  color: #161c3a;
+}
+
+.chevron {
+  font-size: 22px !important;
+  color: #161c3a;
+  flex-shrink: 0;
+}
+
+.popPaper {
+  border-radius: 12px !important;
+  border: 1px solid #e7e9f0;
+  box-shadow: 0 16px 40px rgba(17, 26, 61, 0.14) !important;
+  margin-top: 6px;
+}
+
+.popFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid #eef0f5;
+}
+
+@media (max-width: 768px) {
+  .trigger {
+    gap: 6px;
+    padding: 0 6px 0 10px;
+    font-size: 12.5px;
+  }
+
+  .lead {
+    font-size: 17px !important;
+  }
+
+  .chevron {
+    font-size: 20px !important;
+  }
+}

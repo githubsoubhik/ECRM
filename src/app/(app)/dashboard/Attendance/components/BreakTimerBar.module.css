@@ -1,0 +1,73 @@
+/* src/app/dashboard/Attendance/components/BreakTimerBar.module.css */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #fde3b0;
+  border-radius: 12px;
+  background: #fffaf0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.barTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #fde3b0;
+  border-radius: 99px;
+  background: #fff;
+}
+
+.itemId {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  letter-spacing: 0.02em;
+}
+
+.itemName {
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.itemClock {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .bar {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .itemName {
+    display: none;
+  }
+}
