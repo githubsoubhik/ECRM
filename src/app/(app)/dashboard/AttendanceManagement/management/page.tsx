@@ -31,6 +31,7 @@ import EmployeeView from "./_components/EmployeeView";
 import ReportsView from "./_components/ReportsView";
 import { ImportModal, MarkModal, ProfileModal, SettingsModal } from "./_components/Modals";
 import styles from "./attendance.module.css";
+import { fetchWithAuth } from "../../../../../../lib/fetchWithAuth";
 
 type ModalState = { kind: "mark"; ids: string[]; date: string } | { kind: "import" } | { kind: "settings" } | { kind: "profile"; id: string } | null;
 
@@ -256,6 +257,13 @@ export default function AttendanceManagementPage() {
     );
   }
 
+
+
+
+
+
+     
+
   return (
     <AttendanceCtx.Provider value={api}>
       <div className={styles.page}>
@@ -278,6 +286,9 @@ export default function AttendanceManagementPage() {
           </div>
         )}
       </div>
+
+
     </AttendanceCtx.Provider>
+
   );
 }

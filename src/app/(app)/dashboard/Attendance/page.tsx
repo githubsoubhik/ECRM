@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import AttendanceDetails from './components/AttendanceDetails';
+import { fetchWithAuth } from '../../../../../lib/fetchWithAuth';
 
 interface AttendanceRecord {
   id: string;
@@ -51,6 +52,7 @@ const attendanceHistory: AttendanceRecord[] = [
   { id: '15', date: '29 Sep 2026', day: 'Tue', checkIn: '09:12 AM', checkOut: '06:00 PM', workHours: '8h 48m', status: 'present' },
 ];
 
+
 const AttendancePage = () => {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 3));
@@ -70,6 +72,45 @@ const AttendancePage = () => {
     fetchAttendance();
   }, [currentDate]);
   */
+
+
+  
+const fetchCheckin = async () => {
+
+   const token = localStorage.getItem("token"); 
+
+   const formData = new FormData();
+
+  formData.append("location", "Office");
+  formData.append("lat", "22.5726");
+  formData.append("lng", "88.3639");
+
+
+  const response = await fetchWithAuth(
+  "api/attendance/check-in",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    credentials: "include",
+    body: formData
+  }
+);
+
+const data = await response.json();
+
+console.log("--------------checkinData0", data);
+
+
+
+
+}
+
+useEffect(()=>{
+
+  fetchCheckin();
+}, []);
 
   const getMonthName = (monthIndex: number): string => {
     const months = [
@@ -478,3 +519,4 @@ const AttendancePage = () => {
 };
 
 export default AttendancePage;  
+

@@ -93,6 +93,24 @@ const GUIDELINES = [
 const isAction = (v: string | null): v is AttendanceAction =>
   v === 'check-in' || v === 'check-out' || v === 'break-start' || v === 'break-end';
 
+
+
+function dataUrlToFile(dataUrl: string, fileName: string): File {
+  const [header, base64] = dataUrl.split(",");
+  const mimeType =
+    header.match(/data:(.*?);base64/)?.[1] || "image/jpeg";
+
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new File([bytes], fileName, { type: mimeType });
+}
+
+
 export default function MarkAttendanceClient() {
   const router = useRouter();
   const params = useSearchParams();
@@ -332,37 +350,124 @@ export default function MarkAttendanceClient() {
   }, []);
 
   // Submit: save the photo, verify, write the history row, hand over to the next person.
-  const handleSubmit = useCallback(() => {
-    const capture = pendingCapture;
-    if (!capture) return;
+  // const handleSubmit = useCallback(() => {
+  //   const capture = pendingCapture;
+  //   if (!capture) return;
 
-    const upload = savePhotoToProject(capture.dataUrl, employee.id, action);
-    setStage('verifying');
+  //   const upload = savePhotoToProject(capture.dataUrl, employee.id, action);
+  //   setStage('verifying');
 
-    const wait = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
+  //   const wait = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
 
-    wait(700, () => setStage('matching'));
-    wait(1800, async () => {
-      const verification = verifyFaceDemo(capture.metrics, employee.id);
+  //   wait(700, () => setStage('matching'));
+  //   wait(1800, async () => {
+  //     const verification = verifyFaceDemo(capture.metrics, employee.id);
+  //     setResult(verification);
+
+  //     if (!verification.ok) {
+  //       setStage('failed');
+  //       return;
+  //     }
+
+  //     const fileName = await upload;
+  //     const at = new Date();
+  //     const updated = commitEvent(newEvent(employee, action, at, fileName, verification.confidence));
+
+  //     setNotice(
+  //       `${employee.name} ${ACTION_META[action].verb} at ${formatTime(at.toISOString())}${
+  //         fileName ? ` · photo ${fileName}` : ' · photo not saved'
+  //       }`
+  //     );
+  //     readyForNext(updated, employee.id);
+  //   });
+  // }, [pendingCapture, action, employee, commitEvent, readyForNext]);
+
+
+
+const handleSubmit = useCallback(() => {
+  const capture = pendingCapture;
+
+  if (!capture) return;
+
+  setStage("verifying");
+
+  const wait = (ms: number, fn: () => void) => {
+    timers.current.push(setTimeout(fn, ms));
+  };
+
+  wait(700, () => setStage("matching"));
+
+  wait(1800, async () => {
+    try {
+      // Existing demo face verification
+      const verification = verifyFaceDemo(
+        capture.metrics,
+        employee.id
+      );
+
       setResult(verification);
 
       if (!verification.ok) {
-        setStage('failed');
+        setStage("failed");
+        setNotice("Face verification failed. Please try again.");
         return;
       }
 
-      const fileName = await upload;
-      const at = new Date();
-      const updated = commitEvent(newEvent(employee, action, at, fileName, verification.confidence));
+      // Call actual Express API for check-in
+      if (action === "check-in") {
+        const apiResult = await submitCheckIn(
+          capture.dataUrl,
+          employee.id
+        );
 
-      setNotice(
-        `${employee.name} ${ACTION_META[action].verb} at ${formatTime(at.toISOString())}${
-          fileName ? ` · photo ${fileName}` : ' · photo not saved'
-        }`
-      );
-      readyForNext(updated, employee.id);
-    });
-  }, [pendingCapture, action, employee, commitEvent, readyForNext]);
+        console.log("Attendance API response:", apiResult);
+
+        // Update local UI only after successful API response
+        const at = new Date();
+
+        const updated = commitEvent(
+          newEvent(
+            employee,
+            action,
+            at,
+            apiResult.attendance?.checkInPhoto ?? null,
+            verification.confidence
+          )
+        );
+
+        setNotice(
+          `${employee.name} checked in successfully`
+        );
+
+        readyForNext(updated, employee.id);
+      } else {
+        setNotice(
+          "This API integration currently supports check-in only."
+        );
+        setStage("failed");
+      }
+
+    } catch (error) {
+      console.error("Attendance API error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to mark attendance";
+
+      setNotice(message);
+      setStage("failed");
+    }
+  });
+
+}, [
+  pendingCapture,
+  action,
+  employee,
+  commitEvent,
+  readyForNext
+]);
+
 
   /* ---------------- History ---------------- */
 
@@ -385,6 +490,45 @@ export default function MarkAttendanceClient() {
     saveProfile(updated);
     setEditOpen(false);
   };
+
+
+
+async function submitCheckIn(
+  photoDataUrl: string,
+  employeeId: string
+) {
+  const formData = new FormData();
+
+  const photoFile = dataUrlToFile(
+    photoDataUrl,
+    `${employeeId}_checkin.jpg`
+  );
+
+  formData.append("checkInPhoto", photoFile);
+
+  // Optional location values; backend must handle these
+  formData.append("lat", "22.5726");
+  formData.append("lng", "88.3639");
+  formData.append("location", "office");
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/check-in`,
+    {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Check-in failed");
+  }
+
+  return data;
+}
+
 
   return (
     <div className={styles.page}>
