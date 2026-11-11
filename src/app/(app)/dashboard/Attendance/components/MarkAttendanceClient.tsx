@@ -27,6 +27,8 @@ import VerificationSteps, { Stage } from './VerificationSteps';
 import EmployeeDetailsCard from './EmployeeDetailsCard';
 import EditProfileModal from './EditProfileModal';
 
+import { apiCheckIn, apiCheckOut, apiBreakStart, apiBreakEnd, getCoords,  } from '@/app/data/attendanceApi';
+
 import {
   ACTION_META,
   AttendanceAction,
@@ -135,6 +137,30 @@ export default function MarkAttendanceClient() {
   const [autoStart, setAutoStart] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  const [ checkClick, SetCheckClick] = useState(false);
+  const USE_CAMERA = false; // set true to bring the camera flow back
+
+const [submitting, setSubmitting] = useState(false); // put with the other useState lines
+
+const doCheckIn = async () => {
+  if (submitting || !canPerform('check-in', log).allowed) return;
+  setSubmitting(true);
+  try {
+    const coords = await getCoords();
+    await apiCheckIn(null, employee.id, coords);          // POST /api/attendance/check-in
+    const at = new Date();
+    commitEvent(newEvent(employee, 'check-in', at, null, null));
+    setNotice(`${employee.name} checked in at ${formatTime(at.toISOString())}`);
+    setAction('break-start');                             // Break and Check Out now show
+  } catch (error) {
+    setNotice(error instanceof Error ? error.message : 'Unable to check in');
+  } finally {
+    setSubmitting(false);
+  }
+};
+  
+
+
   /* ---------------- Load + clock (client only) ---------------- */
 
   useEffect(() => {
@@ -150,6 +176,36 @@ export default function MarkAttendanceClient() {
       clearTimeout(timer);
     };
   }, []);
+
+  // Sync today's record from the database into the page's history
+// useEffect(() => {
+//   (async () => {
+//     try {
+//       const res = await apiToday();
+//       const rec = res.data;
+//       if (!rec?.checkIn) return;
+
+//       const local = buildLog(selectedId, loadHistory());
+//       if (local.checkIn) return; // already in sync
+
+//       const events: AttendanceEvent[] = [
+//         newEvent(employee, 'check-in', new Date(rec.checkIn), rec.checkInPhoto ?? null, null),
+//       ];
+//       for (const b of rec.breaks ?? []) {
+//         events.push(newEvent(employee, 'break-start', new Date(b.start), null, null));
+//         if (b.end) events.push(newEvent(employee, 'break-end', new Date(b.end), null, null));
+//       }
+//       if (rec.checkOut) events.push(newEvent(employee, 'check-out', new Date(rec.checkOut), null, null));
+
+//       const merged = sortHistory([...loadHistory(), ...events]);
+//       saveHistory(merged);
+//       setHistory(merged);
+//     } catch {
+//       /* not logged in or offline: keep local data */
+//     }
+//   })();
+//   // eslint-disable-next-line react-hooks/exhaustive-deps
+// }, []);
 
   // Profile of whoever is selected.
   useEffect(() => {
@@ -273,11 +329,10 @@ export default function MarkAttendanceClient() {
 
   const handleActionChange = (next: AttendanceAction) => {
     if (flowActive && next !== action) return;
-
-    if (next === 'check-out' && canPerform('check-out', log).allowed) {
-      setConfirmCheckout(true);
-      return;
-    }
+if (next === 'check-in' && !USE_CAMERA) {
+  doCheckIn();
+  return;
+}
 
     // Break Start / Break End: no camera, just the timer panel
     if (!needsPhoto(next)) {
@@ -313,17 +368,47 @@ export default function MarkAttendanceClient() {
   };
 
   // OK in the check-out popup: marked straight away, no photo.
-  const confirmCheckoutNow = () => {
+  // const confirmCheckoutNow = () => {
+  //   const at = new Date();
+  //   const updated = commitEvent(newEvent(employee, 'check-out', at, null, null));
+  //   setConfirmCheckout(false);
+  //   setNotice(`${employee.name} checked out at ${formatTime(at.toISOString())}`);
+  //   readyForNext(updated, employee.id);
+  // };
+  
+
+  const confirmCheckoutNow = async () => {
+  try {
+    await apiCheckOut();
     const at = new Date();
     const updated = commitEvent(newEvent(employee, 'check-out', at, null, null));
     setConfirmCheckout(false);
     setNotice(`${employee.name} checked out at ${formatTime(at.toISOString())}`);
     readyForNext(updated, employee.id);
-  };
+  } catch (error) {
+    setConfirmCheckout(false);
+    setNotice(error instanceof Error ? error.message : 'Unable to check out');
+  }
+};
 
   // Break Start / Break End are recorded straight away, without a photo.
-  const markBreak = (breakAction: AttendanceAction) => {
-    if (!canPerform(breakAction, log).allowed) return;
+  // const markBreak = (breakAction: AttendanceAction) => {
+  //   if (!canPerform(breakAction, log).allowed) return;
+  //   const at = new Date();
+  //   commitEvent(newEvent(employee, breakAction, at, null, null));
+  //   setNotice(`${employee.name} (${employee.id}) ${ACTION_META[breakAction].verb} at ${formatTime(at.toISOString())}`);
+  //   setAction(breakAction === 'break-start' ? 'break-end' : 'break-start');
+  //   setStage('idle');
+  //   setAutoStart(false);
+  //   setActionLocked(false);
+  // };
+
+  const markBreak = async (breakAction: AttendanceAction) => {
+  if (!canPerform(breakAction, log).allowed) return;
+  try {
+    if (breakAction === 'break-start') await apiBreakStart();
+    else await apiBreakEnd();
+
     const at = new Date();
     commitEvent(newEvent(employee, breakAction, at, null, null));
     setNotice(`${employee.name} (${employee.id}) ${ACTION_META[breakAction].verb} at ${formatTime(at.toISOString())}`);
@@ -331,7 +416,10 @@ export default function MarkAttendanceClient() {
     setStage('idle');
     setAutoStart(false);
     setActionLocked(false);
-  };
+  } catch (error) {
+    setNotice(error instanceof Error ? error.message : 'Unable to update break');
+  }
+};
 
   // Photo captured: it stays on screen until Submit.
   const handleCapture = useCallback((capture: CaptureResult) => {
@@ -384,89 +472,162 @@ export default function MarkAttendanceClient() {
 
 
 
-const handleSubmit = useCallback(() => {
-  const capture = pendingCapture;
+// const handleSubmit = useCallback(() => {
+//   const capture = pendingCapture;
 
-  if (!capture) return;
+//   if (!capture) return;
 
-  setStage("verifying");
+//   setStage("verifying");
 
-  const wait = (ms: number, fn: () => void) => {
-    timers.current.push(setTimeout(fn, ms));
-  };
+//   const wait = (ms: number, fn: () => void) => {
+//     timers.current.push(setTimeout(fn, ms));
+//   };
 
-  wait(700, () => setStage("matching"));
+//   wait(700, () => setStage("matching"));
 
-  wait(1800, async () => {
-    try {
-      // Existing demo face verification
-      const verification = verifyFaceDemo(
-        capture.metrics,
-        employee.id
-      );
+//   wait(1800, async () => {
+//     try {
+//       // Existing demo face verification
+//       const verification = verifyFaceDemo(
+//         capture.metrics,
+//         employee.id
+//       );
 
-      setResult(verification);
+//       setResult(verification);
 
-      if (!verification.ok) {
-        setStage("failed");
-        setNotice("Face verification failed. Please try again.");
-        return;
-      }
+//       if (!verification.ok) {
+//         setStage("failed");
+//         setNotice("Face verification failed. Please try again.");
+//         return;
+//       }
 
-      // Call actual Express API for check-in
-      if (action === "check-in") {
-        const apiResult = await submitCheckIn(
-          capture.dataUrl,
-          employee.id
-        );
+//       // Call actual Express API for check-in
+//       if (action === "check-in") {
+//         const apiResult = await submitCheckIn(
+//           capture.dataUrl,
+//           employee.id
+//         );
 
-        console.log("Attendance API response:", apiResult);
+//         console.log("Attendance API response:", apiResult);
 
-        // Update local UI only after successful API response
+//         // Update local UI only after successful API response
+//         const at = new Date();
+
+//         const updated = commitEvent(
+//           newEvent(
+//             employee,
+//             action,
+//             at,
+//             apiResult.attendance?.checkInPhoto ?? null,
+//             verification.confidence
+//           )
+//         );
+
+//         setNotice(
+//           `${employee.name} checked in successfully`
+//         );
+
+//         readyForNext(updated, employee.id);
+//       } else {
+//         setNotice(
+//           "This API integration currently supports check-in only."
+//         );
+//         setStage("failed");
+//       }
+
+//     } catch (error) {
+//       console.error("Attendance API error:", error);
+
+//       const message =
+//         error instanceof Error
+//           ? error.message
+//           : "Unable to mark attendance";
+
+//       setNotice(message);
+//       setStage("failed");
+//     }
+//   });
+
+// }, [
+//   pendingCapture,
+//   action,
+//   employee,
+//   commitEvent,
+//   readyForNext
+// ]);
+
+
+// After a successful check-in: stay on this employee, no camera, show Break / Check Out
+const afterCheckIn = useCallback(() => {
+  clearTimers();
+  setStage('idle');
+  setResult(null);
+  setPhoto(null);
+  setPendingCapture(null);
+  setAutoStart(false);
+  setActionLocked(false);
+  setAction('break-start');
+}, []);
+
+// After check-out: nothing left to mark today
+const afterCheckOut = useCallback(() => {
+  clearTimers();
+  setStage('idle');
+  setPhoto(null);
+  setPendingCapture(null);
+  setAutoStart(false);
+  setActionLocked(false);
+}, []);
+
+// capture = null means "mark without a photo" (temporary)
+const submitAttendance = useCallback(
+  (capture: CaptureResult | null) => {
+    setStage('verifying');
+
+    const wait = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
+    wait(700, () => setStage('matching'));
+
+    wait(1800, async () => {
+      try {
+        // Face check only when a photo exists
+        let confidence: number | null = null;
+        if (capture) {
+          const verification = verifyFaceDemo(capture.metrics, employee.id);
+          setResult(verification);
+          if (!verification.ok) {
+            setStage('failed');
+            return;
+          }
+          confidence = verification.confidence;
+        }
+
+        const coords = await getCoords();
+        const api = await apiCheckIn(capture?.dataUrl ?? null, employee.id, coords);
+
         const at = new Date();
-
         const updated = commitEvent(
-          newEvent(
-            employee,
-            action,
-            at,
-            apiResult.attendance?.checkInPhoto ?? null,
-            verification.confidence
-          )
+          newEvent(employee, action, at, api.data?.checkInPhoto ?? null, confidence)
         );
 
-        setNotice(
-          `${employee.name} checked in successfully`
-        );
-
-        readyForNext(updated, employee.id);
-      } else {
-        setNotice(
-          "This API integration currently supports check-in only."
-        );
-        setStage("failed");
+        setNotice(`${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`);
+        // readyForNext(updated, employee.id);
+        afterCheckIn();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to mark attendance';
+        setResult({ ok: false, message } as VerificationResult);
+        setNotice(message);
+        setStage('failed');
       }
+    });
+  },
+  [action, employee, commitEvent, readyForNext]
+);
 
-    } catch (error) {
-      console.error("Attendance API error:", error);
+const handleSubmit = useCallback(() => {
+  if (pendingCapture) submitAttendance(pendingCapture);
+}, [pendingCapture, submitAttendance]);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to mark attendance";
-
-      setNotice(message);
-      setStage("failed");
-    }
-  });
-
-}, [
-  pendingCapture,
-  action,
-  employee,
-  commitEvent,
-  readyForNext
-]);
+const handleSkipPhoto = useCallback(() => submitAttendance(null), [submitAttendance]);
 
 
   /* ---------------- History ---------------- */
@@ -528,6 +689,18 @@ async function submitCheckIn(
 
   return data;
 }
+
+
+// Which buttons to show depends on today's state
+const visibleActions: AttendanceAction[] = log.checkOut
+  ? []                                   // day finished
+  : !log.checkIn
+  ? ['check-in']                         // not checked in yet
+  : openBreak
+  ? ['break-end', 'check-out']           // on a break
+  : ['break-start', 'check-out'];        // checked in
+
+const dayDone = !!log.checkOut;
 
 
   return (
@@ -617,7 +790,7 @@ async function submitCheckIn(
 
         {/* Center Column: Employee picker + actions + camera */}
         <section className={styles.mainCard}>
-          <div className={styles.kioskRow}>
+          {/* <div className={styles.kioskRow}>
             <label className={styles.kioskLabel} htmlFor="kiosk-employee">
               <Users size={15} aria-hidden />
               Marking for
@@ -645,11 +818,11 @@ async function submitCheckIn(
                 );
               })}
             </select>
-          </div>
+          </div> */}
 
           {/* Action buttons */}
           <div className={styles.actionRow} role="tablist" aria-label="Attendance action">
-            {ACTIONS.map((a) => {
+            {visibleActions.map((a) => {
               const allowed = canPerform(a, log).allowed;
               const lockedOut = flowActive && a !== action;
               const m = ACTION_META[a];
@@ -687,7 +860,9 @@ async function submitCheckIn(
             </p>
 
             {photoRequired ? (
-              <CameraCapture
+              <>
+
+                  <CameraCapture
                 stage={stage}
                 action={action}
                 photo={photo}
@@ -701,6 +876,16 @@ async function submitCheckIn(
                 onSubmit={handleSubmit}
                 onRetake={handleRetake}
               />
+               {action === 'check-in' && permission.allowed && !['verifying', 'matching'].includes(stage) && (
+      <button type="button" className={styles.changeActionBtn} onClick={handleSkipPhoto}>
+        Check in without photo (temporary)
+      </button>
+    )}
+              
+              </>
+          
+
+      
             ) : (
               /* Break panel replaces the camera */
               <div className={styles.breakPanel}>
@@ -761,7 +946,7 @@ async function submitCheckIn(
               <strong>{working}</strong>
             </span>
             <span className={styles.todayItem}>
-              <span className={styles.todayLabel}>Check In</span>
+              <span className={styles.todayLabel} onClick={()=>SetCheckClick(true)}>Check In</span> 
               <strong>{summary.checkIn}</strong>
             </span>
             <span className={styles.todayItem}>
@@ -844,6 +1029,12 @@ async function submitCheckIn(
             )}
           </div>
         </section>
+
+        {dayDone && (
+  <p className={styles.notice} role="status">
+    <Check size={16} aria-hidden /> You have checked out for today.
+  </p>
+)}
 
         {/* Right Column: Employee Details Sidebar */}
         <aside className={styles.sideColumn}>

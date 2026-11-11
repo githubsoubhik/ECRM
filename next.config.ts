@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 // Your Express/Node backend (the one that serves /api/...)
-const API_ORIGIN = process.env.API_ORIGIN || "http://192.168.200.161:5000";
+const API_ORIGIN = process.env.API_ORIGIN || "http://192.168.200.161:5000"  ;
 
 const nextConfig: NextConfig = {
   // Allow your network IP / localhost while running `npm run dev`

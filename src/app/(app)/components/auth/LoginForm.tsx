@@ -238,7 +238,7 @@ export default function LoginForm() {
 
     // Go back to the page the user first asked for (internal paths only)
     const next = new URLSearchParams(window.location.search).get("next");
-    const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+    const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard/Attendance";
 
     router.replace(safe);
     router.refresh();
@@ -263,7 +263,7 @@ export default function LoginForm() {
       // Example call to biometric verification endpoint when configured
       toast.success("Biometric verification successful!", { id: biometricToastId });
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/dashboard/Attendance");
       }, 1000);
     } catch (error) {
       toast.error("Biometric authentication failed. Please try again.", {

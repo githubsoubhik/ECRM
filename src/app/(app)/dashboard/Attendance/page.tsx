@@ -75,42 +75,42 @@ const AttendancePage = () => {
 
 
   
-const fetchCheckin = async () => {
+// const fetchCheckin = async () => {
 
-   const token = localStorage.getItem("token"); 
+//    const token = localStorage.getItem("token"); 
 
-   const formData = new FormData();
+//    const formData = new FormData();
 
-  formData.append("location", "Office");
-  formData.append("lat", "22.5726");
-  formData.append("lng", "88.3639");
-
-
-  const response = await fetchWithAuth(
-  "api/attendance/check-in",
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
-    credentials: "include",
-    body: formData
-  }
-);
-
-const data = await response.json();
-
-console.log("--------------checkinData0", data);
+//   formData.append("location", "Office");
+//   formData.append("lat", "22.5726");
+//   formData.append("lng", "88.3639");
 
 
+//   const response = await fetchWithAuth(
+//   "api/attendance/check-in",
+//   {
+//     method: "POST",
+//     headers: {
+//       Authorization: `Bearer ${token}`
+//     },
+//     credentials: "include",
+//     body: formData
+//   }
+// );
+
+// const data = await response.json();
+
+// console.log("--------------checkinData0", data);
 
 
-}
 
-useEffect(()=>{
 
-  fetchCheckin();
-}, []);
+// }
+
+// useEffect(()=>{
+
+//   fetchCheckin();
+// }, []);
 
   const getMonthName = (monthIndex: number): string => {
     const months = [
@@ -288,7 +288,7 @@ useEffect(()=>{
                   className={styles.checkOutBtn}
                   onClick={() => router.push('/dashboard/Attendance/mark?action=check-in')}
                 >
-                  <LogOut size={16} />
+                  {/* <LogOut size={16} /> */}
                   Check IN
                 </button>
                 <button
