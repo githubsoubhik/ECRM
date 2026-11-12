@@ -6,7 +6,7 @@ const API_ORIGIN = process.env.API_ORIGIN || "http://192.168.200.161:5000"  ;
 
 const nextConfig: NextConfig = {
   // Allow your network IP / localhost while running `npm run dev`
-  allowedDevOrigins: ["192.168.200.161", "localhost"],
+  allowedDevOrigins: ["192.168.200.161", "localhost", "*.trycloudflare.com",],
 
   // Removes the pnpm-workspace warning
   outputFileTracingRoot: path.resolve(process.cwd()),

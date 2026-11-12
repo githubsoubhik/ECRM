@@ -27,6 +27,7 @@ import VerificationSteps, { Stage } from './VerificationSteps';
 import EmployeeDetailsCard from './EmployeeDetailsCard';
 import EditProfileModal from './EditProfileModal';
 
+
 import { apiCheckIn, apiCheckOut, apiBreakStart, apiBreakEnd, getCoords,  } from '@/app/data/attendanceApi';
 
 import {
@@ -58,6 +59,8 @@ import {
   verifyFaceDemo,
   workedMinutes,
 } from '@/app/data/employeeData';
+import Modal from '@mui/material/Modal';
+import { ModalClose, ModalDialog, ModalOverflow } from '@mui/joy';
 
 // Sends the camera photo to /api/save-photo, which saves it in pavion_crm/attendance-photos/
 async function savePhotoToProject(dataUrl: string, employeeId: string, action: AttendanceAction): Promise<string | null> {
@@ -74,6 +77,8 @@ async function savePhotoToProject(dataUrl: string, employeeId: string, action: A
     return null;
   }
 }
+
+const USE_CAMERA = false; // set true to bring the camera flow back
 
 const ACTIONS: AttendanceAction[] = ['check-in', 'check-out', 'break-start', 'break-end'];
 
@@ -138,7 +143,7 @@ export default function MarkAttendanceClient() {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const [ checkClick, SetCheckClick] = useState(false);
-  const USE_CAMERA = false; // set true to bring the camera flow back
+  
 
 const [submitting, setSubmitting] = useState(false); // put with the other useState lines
 
@@ -151,7 +156,8 @@ const doCheckIn = async () => {
     const at = new Date();
     commitEvent(newEvent(employee, 'check-in', at, null, null));
     setNotice(`${employee.name} checked in at ${formatTime(at.toISOString())}`);
-    setAction('break-start');                             // Break and Check Out now show
+    setAction('break-start');   
+    setActionLocked(false);                        // Break and Check Out now show
   } catch (error) {
     setNotice(error instanceof Error ? error.message : 'Unable to check in');
   } finally {
@@ -178,6 +184,38 @@ const doCheckIn = async () => {
   }, []);
 
   // Sync today's record from the database into the page's history
+
+//   useEffect(() => {
+//   (async () => {
+//     try {
+//       const res = await apiToday();
+//       const rec = res.data;
+
+//       const others = loadHistory().filter((e) => e.employeeId !== selectedId);
+//       const events: AttendanceEvent[] = [];
+
+//       if (rec?.checkIn) {
+//         events.push(newEvent(employee, 'check-in', new Date(rec.checkIn), rec.checkInPhoto ?? null, null));
+//         for (const b of rec.breaks ?? []) {
+//           events.push(newEvent(employee, 'break-start', new Date(b.start), null, null));
+//           if (b.end) events.push(newEvent(employee, 'break-end', new Date(b.end), null, null));
+//         }
+//         if (rec.checkOut) events.push(newEvent(employee, 'check-out', new Date(rec.checkOut), null, null));
+//       }
+
+//       const merged = sortHistory([...others, ...events]);
+//       saveHistory(merged);
+//       setHistory(merged);
+
+//       // pick the right tab for the current state
+//       setAction(!rec?.checkIn ? 'check-in' : rec.checkOut ? 'check-in' : 'break-start');
+//     } catch {
+//       /* not logged in or offline: keep local data */
+//     }
+//   })();
+//   // eslint-disable-next-line react-hooks/exhaustive-deps
+// }, []);
+
 // useEffect(() => {
 //   (async () => {
 //     try {
@@ -214,22 +252,41 @@ const doCheckIn = async () => {
   }, [selectedId]);
 
   // ?action=check-in from the dashboard button.
-  useEffect(() => {
-    const requested = params.get('action');
-    if (!isAction(requested)) return;
+  // useEffect(() => {
+  //   const requested = params.get('action');
+  //   if (!isAction(requested)) return;
 
-    const timer = window.setTimeout(() => {
-      if (requested === 'check-out') {
-        setConfirmCheckout(true);
-        return;
-      }
-      setAction(requested);
+  //   const timer = window.setTimeout(() => {
+  //     if (requested === 'check-out') {
+  //       setConfirmCheckout(true);
+  //       return;
+  //     }
+  //     setAction(requested);
+  //     setActionLocked(true);
+  //     setAutoStart(true);
+  //   }, 0);
+
+  //   return () => window.clearTimeout(timer);
+  // }, [params]);
+
+  useEffect(() => {
+  const requested = params.get('action');
+  if (!isAction(requested)) return;
+
+  const timer = window.setTimeout(() => {
+    if (requested === 'check-out') {
+      setConfirmCheckout(true);
+      return;
+    }
+    setAction(requested);
+    if (USE_CAMERA && needsPhoto(requested)) {
       setActionLocked(true);
       setAutoStart(true);
-    }, 0);
+    }
+  }, 0);
 
-    return () => window.clearTimeout(timer);
-  }, [params]);
+  return () => window.clearTimeout(timer);
+}, [params]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -329,10 +386,16 @@ const doCheckIn = async () => {
 
   const handleActionChange = (next: AttendanceAction) => {
     if (flowActive && next !== action) return;
-if (next === 'check-in' && !USE_CAMERA) {
-  doCheckIn();
-  return;
-}
+    
+  if (next === 'check-in' && !USE_CAMERA) {
+    doCheckIn();
+    return;
+  }
+
+  if (next === 'check-out') {
+    if (log.checkIn && !log.checkOut) setConfirmCheckout(true);
+    return;
+  }
 
     // Break Start / Break End: no camera, just the timer panel
     if (!needsPhoto(next)) {
@@ -367,7 +430,7 @@ if (next === 'check-in' && !USE_CAMERA) {
     else setAutoStart(false);
   };
 
-  // OK in the check-out popup: marked straight away, no photo.
+ // OK in the check-out popup: marked straight away, no photo.
   // const confirmCheckoutNow = () => {
   //   const at = new Date();
   //   const updated = commitEvent(newEvent(employee, 'check-out', at, null, null));
@@ -375,21 +438,26 @@ if (next === 'check-in' && !USE_CAMERA) {
   //   setNotice(`${employee.name} checked out at ${formatTime(at.toISOString())}`);
   //   readyForNext(updated, employee.id);
   // };
+
   
 
-  const confirmCheckoutNow = async () => {
+const confirmCheckoutNow = async () => {
   try {
-    await apiCheckOut();
+    await apiCheckOut();                                   
     const at = new Date();
-    const updated = commitEvent(newEvent(employee, 'check-out', at, null, null));
+    commitEvent(newEvent(employee, 'check-out', at, null, null));
     setConfirmCheckout(false);
     setNotice(`${employee.name} checked out at ${formatTime(at.toISOString())}`);
-    readyForNext(updated, employee.id);
+    afterCheckOut();
   } catch (error) {
     setConfirmCheckout(false);
     setNotice(error instanceof Error ? error.message : 'Unable to check out');
   }
 };
+
+// useEffect(()=>{
+//    confirmCheckoutNow();
+// },[confirmCheckout])
 
   // Break Start / Break End are recorded straight away, without a photo.
   // const markBreak = (breakAction: AttendanceAction) => {
@@ -1058,7 +1126,15 @@ const dayDone = !!log.checkOut;
       </p>
 
       {/* Check-out confirmation popup */}
-      {confirmCheckout && (
+      {/* {confirmCheckout === true && (
+
+        <Modal open = {confirmCheckout} onClose={()=>{setConfirmCheckout(false)}}>
+  <ModalDialog size="lg">
+    <ModalClose />
+
+   
+   
+ 
         <div
           className={styles.confirmOverlay}
           onMouseDown={(e) => {
@@ -1069,7 +1145,7 @@ const dayDone = !!log.checkOut;
             <span className={styles.confirmIcon}>
               <LogOut size={22} />
             </span>
-            <h2 id="checkout-title" className={styles.confirmTitle}>Check out now?</h2>
+            <h2 id="checkout-title" className={styles.confirmTitle}>Check out now? hiiii</h2>
             <p className={styles.confirmText}>
               This closes {employee.name}&apos;s work day at {now ? formatClock(now) : 'the current time'}.
             </p>
@@ -1083,7 +1159,37 @@ const dayDone = !!log.checkOut;
             </div>
           </div>
         </div>
-      )}
+
+         </ModalDialog>
+</Modal>
+      )} */}
+
+      {confirmCheckout && (
+  <div
+    className={styles.confirmOverlay}
+    onMouseDown={(e) => {
+      if (e.target === e.currentTarget) setConfirmCheckout(false);
+    }}
+  >
+    <div className={styles.confirmBox} role="alertdialog" aria-modal="true" aria-labelledby="checkout-title">
+      <span className={styles.confirmIcon}>
+        <LogOut size={22} />
+      </span>
+      <h2 id="checkout-title" className={styles.confirmTitle}>Check out now?</h2>
+      <p className={styles.confirmText}>
+        This closes {employee.name}&apos;s work day at {now ? formatClock(now) : 'the current time'}.
+      </p>
+      <div className={styles.confirmActions}>
+        <button type="button" className={styles.ghostBtn} onClick={() => setConfirmCheckout(false)}>
+          Cancel
+        </button>
+        <button type="button" className={styles.confirmOkBtn} onClick={confirmCheckoutNow} autoFocus>
+          OK, check out
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {editOpen && (
         <EditProfileModal employee={employee} onClose={() => setEditOpen(false)} onSave={handleProfileSave} />
