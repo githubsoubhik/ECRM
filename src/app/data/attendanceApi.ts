@@ -58,6 +58,18 @@ export async function apiCheckIn(photoDataUrl: string | null, employeeId: string
   return request('/check-in', { method: 'POST', body: form }); // no Content-Type: browser sets it
 }
 
-export const apiCheckOut = () => request('/check-out', { method: 'POST' });
-export const apiBreakStart = () => request('/break-start', { method: 'POST' });
-export const apiBreakEnd = () => request('/break-end', { method: 'POST' });
+// export const apiCheckOut = () => request('/check-out', { method: 'POST' });
+// export const apiBreakStart = () => request('/break-start', { method: 'POST' });
+// export const apiBreakEnd = () => request('/break-end', { method: 'POST' });
+
+export const apiCheckOut = () =>
+  request('/check-out', { method: 'POST' });
+
+export const apiBreakStart = () =>
+  request('/break-start', { method: 'POST' });
+
+export const apiBreakEnd = () =>
+  request('/break-end', { method: 'POST' });
+
+export const apiToday = () =>
+  request('/today', { method: 'GET' });

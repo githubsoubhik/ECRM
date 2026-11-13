@@ -6,12 +6,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { canAccess, roleRoutes } from "../../../../../lib/roles";
+import { useAuth } from "../../context/AuthContext";
 
 
 
 export default function Sidebar({role}:{role: string}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  const { user, logout, isAdmin } = useAuth();
 
   // Prevent background scrolling while mobile sidebar is open
   useEffect(() => {

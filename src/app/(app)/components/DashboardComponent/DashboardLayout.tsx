@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import { fetchWithAuth } from "../../../../../lib/fetchWithAuth";
+import { AuthProvider, useAuth  } from "../../context/AuthContext";
+import { constrainedMemory } from "process";
+import { getInitials } from "@/app/data/clientDetailsData";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,6 +18,10 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+
+
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,9 +59,23 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
     router.push("/dashboard/settings");
   };
 
-  console.log("role.....>", role);
+ // console.log("role.....>", role);
+
+
+    // const displayName = .namuser?e || "User";
+  
+  // const displayRole = user?.role || role;
+
+      // const { user } = useAuth();
+
+     //console.log("user ----------->", user);
+
+
+     const {user, loading} = useAuth();
+
 
   return (
+     <AuthProvider>
     <div className="dashboard-container">
       {/* Sidebar */}
       <Sidebar role={role} />
@@ -115,11 +136,12 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                 onClick={() => setIsDropdownOpen((prev) => !prev)}
                 aria-expanded={isDropdownOpen}
               >
-                <div className="avatar">PS</div>
+                <div className="avatar">{user?.name.trim().split(/\s+/).map(name => name.charAt(0).toUpperCase())
+  .join('')}</div>
                 <div className="profile-info">
-                  <strong>Mr. Priyangshu</strong>
+                  <strong></strong>
                           
-                  <strong >{}</strong>
+                  <strong >{user?.name}</strong>
                   <small style={{ textTransform: "capitalize" }}>{role}</small>
                 </div>
                 <svg
@@ -165,5 +187,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         <section className="dashboard-content">{children}</section>
       </main>
     </div>
+    </AuthProvider>
   );
 }

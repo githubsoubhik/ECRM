@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import DashboardLayout from "../components/DashboardComponent/DashboardLayout";
+import { AuthProvider } from "../context/AuthContext";
 
 
 export default async function Layout({
@@ -31,5 +32,5 @@ export default async function Layout({
 
   
 
-  return <DashboardLayout role={role}>{children}</DashboardLayout>;
+  return <AuthProvider> <DashboardLayout role={role}>{children}</DashboardLayout></AuthProvider>;
 }

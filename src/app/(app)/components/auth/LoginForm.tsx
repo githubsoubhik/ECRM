@@ -231,6 +231,8 @@ export default function LoginForm() {
       throw new Error(result.message || "Invalid credentials.");
     }
 
+    console.log("result-------------login",result);
+
     // The JWT is now in an httpOnly cookie set by the server.
     // Do NOT store it in localStorage.
 

@@ -17,6 +17,8 @@ import styles from './page.module.css';
 import AttendanceDetails from './components/AttendanceDetails';
 import { fetchWithAuth } from '../../../../../lib/fetchWithAuth';
 
+import { useAttendance } from '@/app/customHook/useAttendance';
+
 interface AttendanceRecord {
   id: string;
   date: string;
@@ -73,6 +75,9 @@ const AttendancePage = () => {
   }, [currentDate]);
   */
 
+
+//  for   fetching count
+  const [attendanceApiCount, setAttendanceApiCount] = useState(0);
 
   
 // const fetchCheckin = async () => {
@@ -167,10 +172,23 @@ const AttendancePage = () => {
 
   const [currentTime, setCurrentTime] = useState('00:00:00 AM');
 
+
+   const [currentDay, setCurrentDay] = useState('')
+
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-US', { hour12: true }));
+
+         setCurrentDay(
+      now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    );
+      
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -246,12 +264,34 @@ const AttendancePage = () => {
     </>
   );
 
+  const {
+  attendance,
+  loading,
+  error,
+  checkIn,
+  checkOut,
+  breakStart,
+  breakEnd,
+} = useAttendance();
+
   return (
     <div className={styles.attendancePageWrapper}>
       {/* Breadcrumb & Header */}
       <div className={styles.topNavigation}>
         <span className={styles.breadcrumb}>Dashboard &gt; Attendance</span>
       </div>
+
+      <p>
+  Status: {attendance?.status ?? 'Not Marked'}
+</p>
+
+<p>
+  Check In: {attendance?.checkIn ?? '--'}
+</p>
+
+<p>
+  Check Out: {attendance?.checkOut ?? '--'}
+</p>
 
       <div className={styles.attendanceHeader}>
         <div className={styles.headerLeft}>
@@ -278,7 +318,7 @@ const AttendancePage = () => {
             <div className={styles.todayAttendance}>
               <h2>Todays Attendance</h2>
               <div className={styles.currentTime}>{currentTime}</div>
-              <p className={styles.currentDate}>Wednesday, 3 Sep 2026</p>
+              <p className={styles.currentDate}><strong>{currentDay}</strong></p>
               <div className={styles.checkedInStatus}>
                 <span className={styles.statusDotCheck}></span>
                 <span>You are currently checked in</span>
