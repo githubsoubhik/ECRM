@@ -1,3 +1,5 @@
+import { fetchWithAuth } from "../../../lib/fetchWithAuth";
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export interface Coords {
@@ -56,20 +58,20 @@ export async function apiCheckIn(photoDataUrl: string | null, employeeId: string
     form.append('lng', String(coords.lng));
   }
   return request('/check-in', { method: 'POST', body: form }); // no Content-Type: browser sets it
+
+
 }
 
-// export const apiCheckOut = () => request('/check-out', { method: 'POST' });
-// export const apiBreakStart = () => request('/break-start', { method: 'POST' });
-// export const apiBreakEnd = () => request('/break-end', { method: 'POST' });
+// attendanceApi.ts
+export async function apiToday() {
+  const res = await fetchWithAuth('/api/attendance/today', { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to load today’s attendance');
+  return res.json(); // { success, data }
+}
 
-export const apiCheckOut = () =>
-  request('/check-out', { method: 'POST' });
+export const apiCheckOut = () => request('/check-out', { method: 'POST' });
+export const apiBreakStart = () => request('/break-start', { method: 'POST' });
+export const apiBreakEnd = () => request('/break-end', { method: 'POST' });
 
-export const apiBreakStart = () =>
-  request('/break-start', { method: 'POST' });
 
-export const apiBreakEnd = () =>
-  request('/break-end', { method: 'POST' });
 
-export const apiToday = () =>
-  request('/today', { method: 'GET' });

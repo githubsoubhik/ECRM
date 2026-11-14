@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import AttendanceDetails from './components/AttendanceDetails';
-import { fetchWithAuth } from '../../../../../lib/fetchWithAuth';
+
 
 import { useAttendance } from '@/app/customHook/useAttendance';
 
@@ -272,42 +272,76 @@ const AttendancePage = () => {
   checkOut,
   breakStart,
   breakEnd,
+
 } = useAttendance();
+
+// console.log("atttandance------------------>check ", attendance );
+
+
+const state = attendance?.state ?? 'not_checked_in';
+
+
+
+const STATE_LABEL: Record<string, string> = {
+  not_checked_in: 'You have not checked in yet',
+  checked_in: 'You are currently checked in',
+  on_break: 'You are on a break',
+  checked_out: 'You have checked out for today',
+};
+
+const STATE_STYLE: Record<string, string> = {
+  not_checked_in: styles.statusNotCheckedIn,
+  checked_in: styles.statusCheckedIn,
+  on_break: styles.statusOnBreak,
+  checked_out: styles.statusCheckedOut,
+};
+
+
+
+
+const STATUS_STYLE: Record<string, string> = {
+  Present: styles.statusBadgeGreen,
+  Late: styles.statusBadgeOrange,       // add in CSS, see step 4
+  'Not Marked': styles.statusBadgeGray, // add in CSS
+};
+
+const formatTime = (iso?: string | null) =>
+  iso
+    ? new Date(iso).toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata',
+      })
+    : '--';
+
+const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${action}&attendance=${attendance?.state}`);
 
   return (
     <div className={styles.attendancePageWrapper}>
       {/* Breadcrumb & Header */}
-      <div className={styles.topNavigation}>
+      {/* <div className={styles.topNavigation}>
         <span className={styles.breadcrumb}>Dashboard &gt; Attendance</span>
-      </div>
+      </div> */}
 
-      <p>
-  Status: {attendance?.status ?? 'Not Marked'}
-</p>
 
-<p>
-  Check In: {attendance?.checkIn ?? '--'}
-</p>
 
-<p>
-  Check Out: {attendance?.checkOut ?? '--'}
-</p>
 
       <div className={styles.attendanceHeader}>
         <div className={styles.headerLeft}>
           <h1>Attendance</h1>
           <p>Track your working hours, view attendance history and manage your leave requests.</p>
         </div>
-        <div className={styles.headerRight}>
-          <div className={styles.dateChip}>
-            <Calendar size={16} />
-            <span>Wed, 3 Sep 2026</span>
-          </div>
-          <div className={styles.statusBadgeGreen}>
-            <span className={styles.dotGreen}></span>
-            <span>Present</span>
-          </div>
-        </div>
+     <div className={styles.headerRight}>
+  <div className={styles.dateChip}>
+    <Calendar size={16} />
+    <span>{currentDay}</span>
+  </div>
+  <div className={STATUS_STYLE[attendance?.status ?? 'Not Marked'] ?? styles.statusBadgeGray}>
+    <span className={styles.dotGreen}></span>
+    <span>{attendance?.status ?? 'Not Marked'}</span>
+  </div>
+</div>
       </div>
 
       <div className={styles.attendanceContainer}>
@@ -319,26 +353,63 @@ const AttendancePage = () => {
               <h2>Todays Attendance</h2>
               <div className={styles.currentTime}>{currentTime}</div>
               <p className={styles.currentDate}><strong>{currentDay}</strong></p>
-              <div className={styles.checkedInStatus}>
-                <span className={styles.statusDotCheck}></span>
-                <span>You are currently checked in</span>
-              </div>
-              <div className={styles.actionButtons}>
-                <button
-                  className={styles.checkOutBtn}
-                  onClick={() => router.push('/dashboard/Attendance/mark?action=check-in')}
-                >
-                  {/* <LogOut size={16} /> */}
-                  Check IN
-                </button>
-                <button
-                  className={styles.breakBtn}
-                  onClick={() => router.push('/dashboard/Attendance/mark?action=break-start')}
-                >
-                  <Coffee size={16} />
-                  Break
-                </button>
-              </div>
+           
+                        <br></br>
+             {/* <div className={styles.checkedInStatus}>
+  <span className={styles.statusDotCheck}></span>
+  <span>{loading ? 'Loading…' : STATE_LABEL[state]}</span>
+</div> */}
+
+<div
+  className={`${styles.checkedInStatus} ${
+    STATE_STYLE[state] || styles.statusNotCheckedIn
+  }`}
+>
+  <span className={styles.statusDotCheck}></span>
+
+  <span>
+    {loading
+      ? 'Loading…'
+      : STATE_LABEL[state] || 'Unknown status'}
+  </span>
+</div>
+
+{attendance?.checkIn && (
+  <p className={styles.currentDate}>
+    In: {formatTime(attendance.checkIn)}
+    {attendance.checkOut && <> &nbsp;|&nbsp; Out: {formatTime(attendance.checkOut)}</>}
+  </p>
+)}
+
+                    
+        <div className={styles.actionButtons}>
+          {!loading && attendance?.canCheckIn && (
+            <button className={styles.checkOutBtn} onClick={() => go('check-in')}>
+              Check In
+            </button>
+          )}
+
+          {!loading && attendance?.canStartBreak && (
+            <button className={styles.breakBtn} onClick={() => go('break-start')}>
+              <Coffee size={16} /> Break
+            </button>
+          )}
+
+          {!loading && attendance?.canEndBreak && (
+            <button className={styles.breakBtn} onClick={() => go('break-end')}>
+              <Coffee size={16} /> End Break
+            </button>
+          )}
+
+          {!loading && attendance?.canCheckOut && (
+            <button className={styles.checkOutBtn} onClick={() => go('check-out')}>
+              <LogOut size={16} /> Check Out
+            </button>
+          )}
+        </div>
+
+
+
             </div>
 
             <div className={styles.statsGrid}>

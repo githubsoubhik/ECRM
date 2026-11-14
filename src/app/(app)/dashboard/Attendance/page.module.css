@@ -881,3 +881,70 @@
   height: 8px;
   border-radius: 50%;
 }
+
+.statusBadgeOrange { /* same as statusBadgeGreen, with orange colors */
+  background: #fef3c7; color: #b45309;
+}
+.statusBadgeGray {
+  background: #f3f4f6; color: #4b5563;
+}
+
+
+/* Common status design */
+.checkedInStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Not checked in - Gray */
+.statusNotCheckedIn {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.statusNotCheckedIn .statusDotCheck {
+  background: #9ca3af;
+}
+
+/* Checked in - Green */
+.statusCheckedIn {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.statusCheckedIn .statusDotCheck {
+  background: #22c55e;
+}
+
+/* On break - Orange */
+.statusOnBreak {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.statusOnBreak .statusDotCheck {
+  background: #f97316;
+}
+
+/* Checked out - Blue */
+.statusCheckedOut {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusCheckedOut .statusDotCheck {
+  background: #3b82f6;
+}
+
+/* Status indicator */
+.statusDotCheck {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
