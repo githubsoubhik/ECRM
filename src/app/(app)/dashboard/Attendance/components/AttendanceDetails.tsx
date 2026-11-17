@@ -22,8 +22,9 @@ interface AttendanceRecord {
   checkIn: string;
   checkOut: string;
   workHours: string;
-  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday';
+  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday' | 'halfday';
 }
+
 
 interface Props {
   record: AttendanceRecord | { status: 'present' | 'absent' | 'late'; count: string; label: string };
