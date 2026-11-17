@@ -69,6 +69,17 @@ export async function apiToday() {
   return res.json(); // { success, data }
 }
 
+
+export async function apiEmployeeMonth(employeeId: string, month: string) {
+  const res = await fetchWithAuth(
+    `/api/attendance/employee/${encodeURIComponent(employeeId)}?month=${month}`,
+    { credentials: 'include' }
+  );
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || 'Failed to load attendance history');
+  return json; // { success, count, data: [...] }
+}
+
 export const apiCheckOut = () => request('/check-out', { method: 'POST' });
 export const apiBreakStart = () => request('/break-start', { method: 'POST' });
 export const apiBreakEnd = () => request('/break-end', { method: 'POST' });

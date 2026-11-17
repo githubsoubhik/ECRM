@@ -136,17 +136,21 @@ a {
   width: 100%;
   padding: 12px 40px;
   background-color: var(--input-bg);
+
+
   border: 1px solid transparent;
   border-radius: 8px;
   font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
+  color: #0d2238;
 }
 
 .auth-input:focus {
   border-color: var(--primary-yellow);
-  background-color: #ffffff;
+   background-color: #0d2238;
   box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+  color: white;
 }
 
 .auth-input::placeholder {

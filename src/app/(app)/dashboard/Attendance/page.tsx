@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import AttendanceDetails from './components/AttendanceDetails';
+import { useAuth } from '@/app/(app)/context/AuthContext';
+import { useAttendanceHistory, type ApiRecord } from '@/app/customHook/useAttendanceHistory';
 
 
 import { useAttendance } from '@/app/customHook/useAttendance';
@@ -26,42 +28,111 @@ interface AttendanceRecord {
   checkIn: string;
   checkOut: string;
   workHours: string;
-  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday';
+  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday' | 'halfday';
+}
+
+
+
+
+interface CalendarDay {
+  date: number;
+  isCurrentMonth: boolean;
+  status: AttendanceRecord['status'] | 'none';
+  fullDateStr: string;
+}
+
+// const attendanceHistory: AttendanceRecord[] = [
+//   { id: '1', date: '3 Sep 2026', day: 'Thu', checkIn: '09:12 AM', checkOut: '-', workHours: '-', status: 'present' },
+//   { id: '2', date: '1 Sep 2026', day: 'Tue', checkIn: '09:05 AM', checkOut: '06:15 PM', workHours: '9h 10m', status: 'present' },
+//   { id: '3', date: '2 Sep 2026', day: 'Wed', checkIn: '09:20 AM', checkOut: '06:05 PM', workHours: '8h 45m', status: 'present' },
+//   { id: '4', date: '4 Sep 2026', day: 'Fri', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
+//   { id: '5', date: '5 Sep 2026', day: 'Sat', checkIn: '09:10 AM', checkOut: '05:50 PM', workHours: '8h 40m', status: 'present' },
+//   { id: '6', date: '7 Sep 2026', day: 'Mon', checkIn: '09:10 AM', checkOut: '06:05 PM', workHours: '8h 55m', status: 'present' },
+//   { id: '7', date: '9 Sep 2026', day: 'Wed', checkIn: '09:05 AM', checkOut: '06:10 PM', workHours: '9h 05m', status: 'present' },
+//   { id: '8', date: '10 Sep 2026', day: 'Thu', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
+//   { id: '9', date: '11 Sep 2026', day: 'Fri', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
+//   { id: '10', date: '14 Sep 2026', day: 'Mon', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
+//   { id: '11', date: '15 Sep 2026', day: 'Tue', checkIn: '09:45 AM', checkOut: '06:10 PM', workHours: '8h 25m', status: 'late' },
+//   { id: '12', date: '17 Sep 2026', day: 'Thu', checkIn: '09:05 AM', checkOut: '06:00 PM', workHours: '8h 55m', status: 'present' },
+//   { id: '13', date: '22 Sep 2026', day: 'Tue', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
+//   { id: '14', date: '24 Sep 2026', day: 'Thu', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
+//   { id: '15', date: '29 Sep 2026', day: 'Tue', checkIn: '09:12 AM', checkOut: '06:00 PM', workHours: '8h 48m', status: 'present' },
+// ];
+
+interface AttendanceRecord {
+  id: string;
+  dateKey: string;
+  date: string;
+  day: string;
+  checkIn: string;
+  checkOut: string;
+  workHours: string;
+  workMinutes: number;
+  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday' | 'halfday';
 }
 
 interface CalendarDay {
   date: number;
   isCurrentMonth: boolean;
-  status: 'present' | 'absent' | 'late' | 'leave' | 'holiday' | 'none';
+  status: AttendanceRecord['status'] | 'none';
   fullDateStr: string;
 }
 
-const attendanceHistory: AttendanceRecord[] = [
-  { id: '1', date: '3 Sep 2026', day: 'Thu', checkIn: '09:12 AM', checkOut: '-', workHours: '-', status: 'present' },
-  { id: '2', date: '1 Sep 2026', day: 'Tue', checkIn: '09:05 AM', checkOut: '06:15 PM', workHours: '9h 10m', status: 'present' },
-  { id: '3', date: '2 Sep 2026', day: 'Wed', checkIn: '09:20 AM', checkOut: '06:05 PM', workHours: '8h 45m', status: 'present' },
-  { id: '4', date: '4 Sep 2026', day: 'Fri', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
-  { id: '5', date: '5 Sep 2026', day: 'Sat', checkIn: '09:10 AM', checkOut: '05:50 PM', workHours: '8h 40m', status: 'present' },
-  { id: '6', date: '7 Sep 2026', day: 'Mon', checkIn: '09:10 AM', checkOut: '06:05 PM', workHours: '8h 55m', status: 'present' },
-  { id: '7', date: '9 Sep 2026', day: 'Wed', checkIn: '09:05 AM', checkOut: '06:10 PM', workHours: '9h 05m', status: 'present' },
-  { id: '8', date: '10 Sep 2026', day: 'Thu', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
-  { id: '9', date: '11 Sep 2026', day: 'Fri', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
-  { id: '10', date: '14 Sep 2026', day: 'Mon', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
-  { id: '11', date: '15 Sep 2026', day: 'Tue', checkIn: '09:45 AM', checkOut: '06:10 PM', workHours: '8h 25m', status: 'late' },
-  { id: '12', date: '17 Sep 2026', day: 'Thu', checkIn: '09:05 AM', checkOut: '06:00 PM', workHours: '8h 55m', status: 'present' },
-  { id: '13', date: '22 Sep 2026', day: 'Tue', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
-  { id: '14', date: '24 Sep 2026', day: 'Thu', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
-  { id: '15', date: '29 Sep 2026', day: 'Tue', checkIn: '09:12 AM', checkOut: '06:00 PM', workHours: '8h 48m', status: 'present' },
-];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+const fmtTime = (iso?: string | null) =>
+  iso
+    ? new Date(iso).toLocaleTimeString('en-IN', {
+        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata',
+      })
+    : '-';
+
+const fmtHours = (min: number) =>
+  min > 0 ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, '0')}m` : '-';
+
+const toRow = (r: ApiRecord): AttendanceRecord => {
+  const [y, m, d] = r.dateKey.split('-').map(Number);
+  return {
+    id: r._id,
+    dateKey: r.dateKey,
+    date: `${d} ${MONTHS_SHORT[m - 1]} ${y}`,
+    day: DAYS_SHORT[new Date(Date.UTC(y, m - 1, d)).getUTCDay()],
+    checkIn: fmtTime(r.checkIn),
+    checkOut: fmtTime(r.checkOut),
+    workHours: fmtHours(r.workMinutes),
+    workMinutes: r.workMinutes,
+    status: r.status.replace(' ', '').toLowerCase() as AttendanceRecord['status'],
+  };
+};
 
 
 const AttendancePage = () => {
-  const router = useRouter();
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 3));
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+   const router = useRouter();
+  // const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 3));
+  // const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
-  // Ready for API integration: Swap attendanceHistory with response data here
-  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>(attendanceHistory);
+  // // Ready for API integration: Swap attendanceHistory with response data here
+  // const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>(attendanceHistory);
+
+  const { user } = useAuth();
+const [currentDate, setCurrentDate] = useState(new Date());
+const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+
+const {
+  records,
+  loading: histLoading,
+  error: histError,
+} = useAttendanceHistory( user?.id, currentDate);
+
+const attendanceData = useMemo(
+  () => records.map(toRow).sort((a, b) => b.dateKey.localeCompare(a.dateKey)),
+  [records]
+);
+
+
+
+
 
   /*
   // Example API fetch implementation:
@@ -76,8 +147,7 @@ const AttendancePage = () => {
   */
 
 
-//  for   fetching count
-  const [attendanceApiCount, setAttendanceApiCount] = useState(0);
+//  for   fetching coun
 
   
 // const fetchCheckin = async () => {
@@ -266,16 +336,342 @@ const AttendancePage = () => {
 
   const {
   attendance,
-  loading,
+  loading: attLoading,
   error,
   checkIn,
   checkOut,
   breakStart,
   breakEnd,
+  refreshAttendance,
+  refreshing,
 
 } = useAttendance();
 
-// console.log("atttandance------------------>check ", attendance );
+
+
+
+
+//todays attandance recent activity
+type ActivityItem = {
+  id: string;
+  title: string;
+  time: string;
+  sortTime: number;
+  badge: string;
+  type: 'green' | 'orange' | 'gray' | 'red' | 'blue';
+  icon: 'clock' | 'absent' | 'break';
+};
+
+const formatDateTime = (iso?: string | null) => {
+  if (!iso) return '--';
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  });
+  const timePart = d.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  });
+  return `${datePart}, ${timePart}`;
+};
+
+// const recentActivities = useMemo<ActivityItem[]>(() => {
+//   const items: ActivityItem[] = [];
+
+//   const addActivity = (
+//     id: string,
+//     title: string,
+//     dateValue: string | Date,
+//     badge: string,
+//     type: ActivityItem['type'],
+//     icon: ActivityItem['icon']
+//   ) => {
+//     const date = new Date(dateValue);
+
+//     if (Number.isNaN(date.getTime())) return;
+
+//     items.push({
+//       id,
+//       title,
+//       time: date.toLocaleString('en-IN', {
+//         day: '2-digit',
+//         month: 'short',
+//         year: 'numeric',
+//         hour: '2-digit',
+//         minute: '2-digit',
+//         hour12: true,
+//         timeZone: 'Asia/Kolkata',
+//       }),
+//       sortTime: date.getTime(),
+//       badge,
+//       type,
+//       icon,
+//     });
+//   };
+
+//   // 1. Today's check-in
+//   if (attendance?.checkIn) {
+//     const isLate = attendance.status?.toLowerCase() === 'late';
+
+//     addActivity(
+//       'today-check-in',
+//       isLate ? 'Late Check-In' : 'Checked In',
+//       attendance.checkIn,
+//       isLate ? 'Late' : 'On Time',
+//       isLate ? 'orange' : 'green',
+//       'clock'
+//     );
+//   }
+
+//   // 2. Today's breaks
+//   (attendance?.breaks ?? []).forEach(
+//     (
+//       item: {
+//         start?: string | null;
+//         end?: string | null;
+//       },
+//       index: number
+//     ) => {
+//       if (item.start) {
+//         addActivity(
+//           `today-break-start-${index}`,
+//           'Break Started',
+//           item.start,
+//           'Break Start',
+//           'blue',
+//           'break'
+//         );
+//       }
+
+//       if (item.end) {
+//         addActivity(
+//           `today-break-end-${index}`,
+//           'Break Ended',
+//           item.end,
+//           'Break End',
+//           'blue',
+//           'break'
+//         );
+//       }
+//     }
+//   );
+
+//   // 3. Today's check-out
+//   if (attendance?.checkOut) {
+//     addActivity(
+//       'today-check-out',
+//       'Checked Out',
+//       attendance.checkOut,
+//       attendance.workHours || 'Completed',
+//       'gray',
+//       'clock'
+//     );
+//   }
+
+//   // 4. Historical attendance events
+//   const todayKey = new Date().toLocaleDateString('en-CA', {
+//     timeZone: 'Asia/Kolkata',
+//   });
+
+//   attendanceData.forEach((record) => {
+//     // Avoid duplicate events if today's record also exists in history.
+//     const recordDate = new Date(record.date);
+
+//     if (Number.isNaN(recordDate.getTime())) return;
+
+//     const recordKey = recordDate.toLocaleDateString('en-CA', {
+//       timeZone: 'Asia/Kolkata',
+//     });
+
+//     if (recordKey === todayKey) return;
+
+//     const status = record.status.toLowerCase();
+
+//     if (status === 'absent') {
+//       addActivity(
+//         `${record.id}-absent`,
+//         'Absent',
+//         recordDate,
+//         'Absent',
+//         'red',
+//         'absent'
+//       );
+
+//       return;
+//     }
+
+//     if (status === 'leave') {
+//       addActivity(
+//         `${record.id}-leave`,
+//         'On Leave',
+//         recordDate,
+//         'Leave',
+//         'orange',
+//         'clock'
+//       );
+
+//       return;
+//     }
+
+//     if (status === 'holiday') {
+//       addActivity(
+//         `${record.id}-holiday`,
+//         'Holiday',
+//         recordDate,
+//         'Holiday',
+//         'blue',
+//         'clock'
+//       );
+
+//       return;
+//     }
+
+//     if (record.checkIn && record.checkIn !== '-') {
+//       const checkInDate = new Date(
+//         `${record.date} ${record.checkIn}`
+//       );
+
+//       const isLate = status === 'late';
+
+//       addActivity(
+//         `${record.id}-in`,
+//         isLate ? 'Late Check-In' : 'Checked In',
+//         checkInDate,
+//         isLate ? 'Late' : 'On Time',
+//         isLate ? 'orange' : 'green',
+//         'clock'
+//       );
+//     }
+
+//     if (record.checkOut && record.checkOut !== '-') {
+//       const checkOutDate = new Date(
+//         `${record.date} ${record.checkOut}`
+//       );
+
+//       addActivity(
+//         `${record.id}-out`,
+//         'Checked Out',
+//         checkOutDate,
+//         record.workHours || 'Completed',
+//         'gray',
+//         'clock'
+//       );
+//     }
+//   });
+
+//   // Newest activity first
+//   return items.sort((a, b) => b.sortTime - a.sortTime);
+// }, []);
+
+
+
+const recentActivities = useMemo<ActivityItem[]>(() => {
+  if (!attendance) return [];
+
+  const items: ActivityItem[] = [];
+
+  const addActivity = (
+    id: string,
+    title: string,
+    dateValue: string,
+    badge: string,
+    type: ActivityItem['type'],
+    icon: ActivityItem['icon']
+  ) => {
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) return;
+
+    items.push({
+      id,
+      title,
+      time: date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata',
+      }),
+      sortTime: date.getTime(),
+      badge,
+      type,
+      icon,
+    });
+  };
+
+  // Today's check-in
+  if (attendance.checkIn) {
+    const isLate = attendance.status?.toLowerCase() === 'late';
+
+    addActivity(
+      'today-check-in',
+      isLate ? 'Late Check-In' : 'Checked In',
+      attendance.checkIn,
+      isLate ? 'Late' : 'On Time',
+      isLate ? 'orange' : 'green',
+      'clock'
+    );
+  }
+
+  // Today's break events
+  (attendance.breaks ?? []).forEach(
+    (
+      item: {
+        start?: string | null;
+        end?: string | null;
+      },
+      index: number
+    ) => {
+      if (item.start) {
+        addActivity(
+          `break-start-${index}`,
+          'Break Started',
+          item.start,
+          'Break Start',
+          'blue',
+          'break'
+        );
+      }
+
+      if (item.end) {
+        addActivity(
+          `break-end-${index}`,
+          'Break Ended',
+          item.end,
+          'Break End',
+          'blue',
+          'break'
+        );
+      }
+    }
+  );
+
+  // Today's check-out
+  if (attendance.checkOut) {
+    addActivity(
+      'today-check-out',
+      'Checked Out',
+      attendance.checkOut,
+      attendance.workHours || 'Completed',
+      'gray',
+      'clock'
+    );
+  }
+
+  // Latest event first
+  return items.sort(
+    (a, b) => b.sortTime - a.sortTime
+  );
+}, [attendance]);
+
+//console.log("recentActivities------------------>",recentActivities);
+
 
 
 const state = attendance?.state ?? 'not_checked_in';
@@ -368,7 +764,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
   <span className={styles.statusDotCheck}></span>
 
   <span>
-    {loading
+    {attLoading
       ? 'Loading…'
       : STATE_LABEL[state] || 'Unknown status'}
   </span>
@@ -381,27 +777,27 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
   </p>
 )}
 
-                    
+
         <div className={styles.actionButtons}>
-          {!loading && attendance?.canCheckIn && (
+          {!attLoading && attendance?.canCheckIn && (
             <button className={styles.checkOutBtn} onClick={() => go('check-in')}>
               Check In
             </button>
           )}
 
-          {!loading && attendance?.canStartBreak && (
+          {!attLoading && attendance?.canStartBreak && (
             <button className={styles.breakBtn} onClick={() => go('break-start')}>
               <Coffee size={16} /> Break
             </button>
           )}
 
-          {!loading && attendance?.canEndBreak && (
+          {!attLoading && attendance?.canEndBreak && (
             <button className={styles.breakBtn} onClick={() => go('break-end')}>
               <Coffee size={16} /> End Break
             </button>
           )}
 
-          {!loading && attendance?.canCheckOut && (
+          {!attLoading && attendance?.canCheckOut && (
             <button className={styles.checkOutBtn} onClick={() => go('check-out')}>
               <LogOut size={16} /> Check Out
             </button>
@@ -459,7 +855,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   </div>
                 </div>
                 <div className={styles.statLabel}>Work Hours</div>
-                <div className={styles.statValue}>142.5 <span className={styles.statUnit}>Hours</span></div>
+                <div className={styles.statValue}> <span className={styles.statUnit}>Hours</span></div>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressBar} style={{ width: '65%', backgroundColor: '#8b5cf6' }}></div>
                 </div>
@@ -497,7 +893,48 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                     <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
+  {histLoading && (
+    <tr><td colSpan={7}>Loading attendance history…</td></tr>
+  )}
+
+  {!histLoading && histError && (
+    <tr><td colSpan={7} role="alert">{histError}</td></tr>
+  )}
+
+  {!histLoading && !histError && attendanceData.length === 0 && (
+    <tr><td colSpan={7}>No attendance records for this month.</td></tr>
+  )}
+
+  {!histLoading && !histError && attendanceData.map((record) => (
+    <tr key={record.id}>
+      <td>{record.date}</td>
+      <td>{record.day}</td>
+      <td>{record.checkIn}</td>
+      <td>{record.checkOut}</td>
+      <td>{record.workHours}</td>
+      <td>
+        <span className={`${styles.tableBadge} ${styles[record.status]}`}>
+          <span className={styles.badgeDot}></span>
+          {record.status === 'halfday'
+            ? 'Half Day'
+            : record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+        </span>
+      </td>
+      <td>
+        {record.checkOut !== '-' ? (
+          <button className={styles.actionLink} onClick={() => setSelectedRecord(record)}>
+            View
+          </button>
+        ) : (
+          <span className={styles.dash}>-</span>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+                {/* <tbody>
                   {attendanceData.map((record) => (
                     <tr key={record.id}>
                       <td>{record.date}</td>
@@ -522,7 +959,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                       </td>
                     </tr>
                   ))}
-                </tbody>
+                </tbody> */}
               </table>
             </div>
           </div>
@@ -536,7 +973,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
           </div>
 
           {/* Recent Activity */}
-          <div className={styles.recentActivity}>
+          {/* <div className={styles.recentActivity}>
             <div className={styles.activityHeader}>
               <h3>Recent Activity</h3>
               <a href="#" className={styles.viewAllLink}>View All</a>
@@ -549,7 +986,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                 </div>
                 <div className={styles.activityContent}>
                   <p className={styles.activityTitle}>Checked In</p>
-                  <p className={styles.activityTime}>Today, 09:12 AM</p>
+                  <p className={styles.activityTime}>{attendance?.canCheckIn}</p>
                 </div>
                 <span className={styles.pillGreen}>On Time</span>
               </div>
@@ -598,7 +1035,90 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                 <span className={styles.pillRed}>Absent</span>
               </div>
             </div>
+          </div> */}
+
+          <div className={styles.recentActivity}>
+  <div className={styles.activityHeader}>
+    <h3>Recent Activity</h3>
+
+    {refreshing && (
+      <span className={styles.activityRefreshing}>
+        Updating...
+      </span>
+    )}
+  </div>
+
+  <div className={styles.activityList}>
+    {attLoading ? (
+      <p>Loading attendance activities...</p>
+    ) : error && recentActivities.length === 0 ? (
+      <p role="alert">Unable to load attendance activities.</p>
+    ) : recentActivities.length === 0 ? (
+      <p>No attendance activity found.</p>
+    ) : (
+      recentActivities.map((item) => (
+        <div className={styles.activityItem} key={item.id}>
+          <div
+            className={`${styles.activityIcon} ${
+              item.type === 'green'
+                ? styles.greenIconBg
+                : item.type === 'orange'
+                ? styles.orangeIconBg
+                : item.type === 'red'
+                ? styles.redIconBg
+                : item.type === 'blue'
+                ? styles.blueIconBg
+                : styles.redIconBg
+            }`}
+          >
+            <Clock
+              size={16}
+              className={
+                item.type === 'green'
+                  ? styles.greenText
+                  : item.type === 'orange'
+                  ? styles.orangeText
+                  : item.type === 'blue'
+                  ? styles.blueText
+                  : styles.redText
+              }
+            />
           </div>
+
+          <div className={styles.activityContent}>
+            <p className={styles.activityTitle}>
+              {item.title}
+            </p>
+
+            <p className={styles.activityTime}>
+              {item.time}
+            </p>
+          </div>
+
+          <span
+            className={
+              item.type === 'green'
+                ? styles.pillGreen
+                : item.type === 'orange'
+                ? styles.pillOrange
+                : item.type === 'red'
+                ? styles.pillRed
+                : styles.pillGray
+            }
+          >
+            {item.badge}
+          </span>
+        </div>
+      ))
+    )}
+
+    {!attLoading && error && recentActivities.length > 0 && (
+      <p className={styles.activityRefreshing}>
+        Could not refresh. Showing previously loaded activities.
+      </p>
+    )}
+  </div>
+</div>
 
           {/* Leave Request Card */}
           <div className={styles.leaveRequest}>

@@ -16,10 +16,15 @@ import {
 export function useAttendance() {
   const [attendance, setAttendance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+
+
 
   // Fetch today's attendance
   const refreshAttendance = useCallback(async () => {
+     setRefreshing(true);
     try {
       setError(null);
 
@@ -32,6 +37,8 @@ export function useAttendance() {
         err instanceof Error ? err.message : 'Something went wrong'
       );
       throw err;
+    }finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -40,6 +47,12 @@ export function useAttendance() {
     refreshAttendance()
       .catch(() => {})
       .finally(() => setLoading(false));
+
+       const interval = setInterval(() => {
+    refreshAttendance().catch(() => {});
+  }, 120_000); // 2 minutes
+
+  
   }, [refreshAttendance]);
 
   // Check in
@@ -96,6 +109,7 @@ export function useAttendance() {
     breakStart,
     breakEnd,
     refreshAttendance,
+    refreshing,
 
   };
 }
