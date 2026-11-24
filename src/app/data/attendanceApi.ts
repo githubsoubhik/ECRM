@@ -80,9 +80,63 @@ export async function apiEmployeeMonth(employeeId: string, month: string) {
   return json; // { success, count, data: [...] }
 }
 
+// all   attendance 
+
+export async function apiAllAttendance(date: string) {
+  return request(`/all?date=${encodeURIComponent(date)}`, {
+    method: 'GET',
+  });
+}
+
+
 export const apiCheckOut = () => request('/check-out', { method: 'POST' });
 export const apiBreakStart = () => request('/break-start', { method: 'POST' });
 export const apiBreakEnd = () => request('/break-end', { method: 'POST' });
 
 
 
+export async function apiUpdateAttendance(
+  employeeId: string,
+  date: string,
+  body: {
+    status?: string;
+    checkIn?: string | null;   // "09:30" (IST) or null to clear
+    checkOut?: string | null;
+    remarks?: string;
+  }
+) {
+  const res = await fetchWithAuth(
+    `/api/attendance/employee/${encodeURIComponent(employeeId)}/${date}`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  );
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || 'Unable to update attendance');
+  return json;
+}
+
+
+
+export async function apiBulkUpdateAttendance(
+  updates: {
+    employeeId: string;   
+    date: string;
+    status?: string;
+    checkIn?: string | null;  
+    checkOut?: string | null;
+    remarks?: string;
+  }[]) {
+  const res = await fetchWithAuth('/api/attendance/bulk', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ updates }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || 'Unable to bulk update attendance');
+  return json;
+}

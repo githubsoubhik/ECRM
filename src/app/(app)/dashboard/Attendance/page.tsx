@@ -1,5 +1,11 @@
 'use client';
 
+import dayjs, { type Dayjs } from 'dayjs';
+
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -17,6 +23,7 @@ import styles from './page.module.css';
 import AttendanceDetails from './components/AttendanceDetails';
 import { useAuth } from '@/app/(app)/context/AuthContext';
 import { useAttendanceHistory, type ApiRecord } from '@/app/customHook/useAttendanceHistory';
+
 
 
 import { useAttendance } from '@/app/customHook/useAttendance';
@@ -41,23 +48,7 @@ interface CalendarDay {
   fullDateStr: string;
 }
 
-// const attendanceHistory: AttendanceRecord[] = [
-//   { id: '1', date: '3 Sep 2026', day: 'Thu', checkIn: '09:12 AM', checkOut: '-', workHours: '-', status: 'present' },
-//   { id: '2', date: '1 Sep 2026', day: 'Tue', checkIn: '09:05 AM', checkOut: '06:15 PM', workHours: '9h 10m', status: 'present' },
-//   { id: '3', date: '2 Sep 2026', day: 'Wed', checkIn: '09:20 AM', checkOut: '06:05 PM', workHours: '8h 45m', status: 'present' },
-//   { id: '4', date: '4 Sep 2026', day: 'Fri', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
-//   { id: '5', date: '5 Sep 2026', day: 'Sat', checkIn: '09:10 AM', checkOut: '05:50 PM', workHours: '8h 40m', status: 'present' },
-//   { id: '6', date: '7 Sep 2026', day: 'Mon', checkIn: '09:10 AM', checkOut: '06:05 PM', workHours: '8h 55m', status: 'present' },
-//   { id: '7', date: '9 Sep 2026', day: 'Wed', checkIn: '09:05 AM', checkOut: '06:10 PM', workHours: '9h 05m', status: 'present' },
-//   { id: '8', date: '10 Sep 2026', day: 'Thu', checkIn: '09:00 AM', checkOut: '06:00 PM', workHours: '9h 00m', status: 'present' },
-//   { id: '9', date: '11 Sep 2026', day: 'Fri', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
-//   { id: '10', date: '14 Sep 2026', day: 'Mon', checkIn: '-', checkOut: '-', workHours: '-', status: 'leave' },
-//   { id: '11', date: '15 Sep 2026', day: 'Tue', checkIn: '09:45 AM', checkOut: '06:10 PM', workHours: '8h 25m', status: 'late' },
-//   { id: '12', date: '17 Sep 2026', day: 'Thu', checkIn: '09:05 AM', checkOut: '06:00 PM', workHours: '8h 55m', status: 'present' },
-//   { id: '13', date: '22 Sep 2026', day: 'Tue', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
-//   { id: '14', date: '24 Sep 2026', day: 'Thu', checkIn: '-', checkOut: '-', workHours: '-', status: 'absent' },
-//   { id: '15', date: '29 Sep 2026', day: 'Tue', checkIn: '09:12 AM', checkOut: '06:00 PM', workHours: '8h 48m', status: 'present' },
-// ];
+
 
 interface AttendanceRecord {
   id: string;
@@ -80,6 +71,7 @@ interface CalendarDay {
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
 
 const fmtTime = (iso?: string | null) =>
   iso
@@ -109,14 +101,11 @@ const toRow = (r: ApiRecord): AttendanceRecord => {
 
 const AttendancePage = () => {
    const router = useRouter();
-  // const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 3));
-  // const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
-
-  // // Ready for API integration: Swap attendanceHistory with response data here
-  // const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>(attendanceHistory);
-
+  
   const { user } = useAuth();
-const [currentDate, setCurrentDate] = useState(new Date());
+const [currentDate, setCurrentDate] = useState<Date>(
+  () => new Date()
+);
 const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
 const {
@@ -125,67 +114,30 @@ const {
   error: histError,
 } = useAttendanceHistory( user?.id, currentDate);
 
+
+
 const attendanceData = useMemo(
   () => records.map(toRow).sort((a, b) => b.dateKey.localeCompare(a.dateKey)),
   [records]
 );
 
+   // date picker handler
+
+ // Date picker handler
+const datePickerHandler = (value: Dayjs | null) => {
+  if (!value || !value.isValid()) return;
+
+  setCurrentDate(
+    new Date(
+      value.year(),
+      value.month(),
+      1
+    )
+  );
+};
 
 
-
-
-  /*
-  // Example API fetch implementation:
-  useEffect(() => {
-    const fetchAttendance = async () => {
-      const response = await fetch(`/api/attendance?month=${currentDate.getMonth() + 1}&year=${currentDate.getFullYear()}`);
-      const data = await response.json();
-      setAttendanceData(data);
-    };
-    fetchAttendance();
-  }, [currentDate]);
-  */
-
-
-//  for   fetching coun
-
-  
-// const fetchCheckin = async () => {
-
-//    const token = localStorage.getItem("token"); 
-
-//    const formData = new FormData();
-
-//   formData.append("location", "Office");
-//   formData.append("lat", "22.5726");
-//   formData.append("lng", "88.3639");
-
-
-//   const response = await fetchWithAuth(
-//   "api/attendance/check-in",
-//   {
-//     method: "POST",
-//     headers: {
-//       Authorization: `Bearer ${token}`
-//     },
-//     credentials: "include",
-//     body: formData
-//   }
-// );
-
-// const data = await response.json();
-
-// console.log("--------------checkinData0", data);
-
-
-
-
-// }
-
-// useEffect(()=>{
-
-//   fetchCheckin();
-// }, []);
+console.log("attendanceData------------------>",attendanceData);
 
   const getMonthName = (monthIndex: number): string => {
     const months = [
@@ -243,7 +195,12 @@ const attendanceData = useMemo(
   const [currentTime, setCurrentTime] = useState('00:00:00 AM');
 
 
-   const [currentDay, setCurrentDay] = useState('')
+   const [currentDay, setCurrentDay] = useState('');
+
+
+
+   
+console.log("records------------------>",records);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -379,194 +336,6 @@ const formatDateTime = (iso?: string | null) => {
   });
   return `${datePart}, ${timePart}`;
 };
-
-// const recentActivities = useMemo<ActivityItem[]>(() => {
-//   const items: ActivityItem[] = [];
-
-//   const addActivity = (
-//     id: string,
-//     title: string,
-//     dateValue: string | Date,
-//     badge: string,
-//     type: ActivityItem['type'],
-//     icon: ActivityItem['icon']
-//   ) => {
-//     const date = new Date(dateValue);
-
-//     if (Number.isNaN(date.getTime())) return;
-
-//     items.push({
-//       id,
-//       title,
-//       time: date.toLocaleString('en-IN', {
-//         day: '2-digit',
-//         month: 'short',
-//         year: 'numeric',
-//         hour: '2-digit',
-//         minute: '2-digit',
-//         hour12: true,
-//         timeZone: 'Asia/Kolkata',
-//       }),
-//       sortTime: date.getTime(),
-//       badge,
-//       type,
-//       icon,
-//     });
-//   };
-
-//   // 1. Today's check-in
-//   if (attendance?.checkIn) {
-//     const isLate = attendance.status?.toLowerCase() === 'late';
-
-//     addActivity(
-//       'today-check-in',
-//       isLate ? 'Late Check-In' : 'Checked In',
-//       attendance.checkIn,
-//       isLate ? 'Late' : 'On Time',
-//       isLate ? 'orange' : 'green',
-//       'clock'
-//     );
-//   }
-
-//   // 2. Today's breaks
-//   (attendance?.breaks ?? []).forEach(
-//     (
-//       item: {
-//         start?: string | null;
-//         end?: string | null;
-//       },
-//       index: number
-//     ) => {
-//       if (item.start) {
-//         addActivity(
-//           `today-break-start-${index}`,
-//           'Break Started',
-//           item.start,
-//           'Break Start',
-//           'blue',
-//           'break'
-//         );
-//       }
-
-//       if (item.end) {
-//         addActivity(
-//           `today-break-end-${index}`,
-//           'Break Ended',
-//           item.end,
-//           'Break End',
-//           'blue',
-//           'break'
-//         );
-//       }
-//     }
-//   );
-
-//   // 3. Today's check-out
-//   if (attendance?.checkOut) {
-//     addActivity(
-//       'today-check-out',
-//       'Checked Out',
-//       attendance.checkOut,
-//       attendance.workHours || 'Completed',
-//       'gray',
-//       'clock'
-//     );
-//   }
-
-//   // 4. Historical attendance events
-//   const todayKey = new Date().toLocaleDateString('en-CA', {
-//     timeZone: 'Asia/Kolkata',
-//   });
-
-//   attendanceData.forEach((record) => {
-//     // Avoid duplicate events if today's record also exists in history.
-//     const recordDate = new Date(record.date);
-
-//     if (Number.isNaN(recordDate.getTime())) return;
-
-//     const recordKey = recordDate.toLocaleDateString('en-CA', {
-//       timeZone: 'Asia/Kolkata',
-//     });
-
-//     if (recordKey === todayKey) return;
-
-//     const status = record.status.toLowerCase();
-
-//     if (status === 'absent') {
-//       addActivity(
-//         `${record.id}-absent`,
-//         'Absent',
-//         recordDate,
-//         'Absent',
-//         'red',
-//         'absent'
-//       );
-
-//       return;
-//     }
-
-//     if (status === 'leave') {
-//       addActivity(
-//         `${record.id}-leave`,
-//         'On Leave',
-//         recordDate,
-//         'Leave',
-//         'orange',
-//         'clock'
-//       );
-
-//       return;
-//     }
-
-//     if (status === 'holiday') {
-//       addActivity(
-//         `${record.id}-holiday`,
-//         'Holiday',
-//         recordDate,
-//         'Holiday',
-//         'blue',
-//         'clock'
-//       );
-
-//       return;
-//     }
-
-//     if (record.checkIn && record.checkIn !== '-') {
-//       const checkInDate = new Date(
-//         `${record.date} ${record.checkIn}`
-//       );
-
-//       const isLate = status === 'late';
-
-//       addActivity(
-//         `${record.id}-in`,
-//         isLate ? 'Late Check-In' : 'Checked In',
-//         checkInDate,
-//         isLate ? 'Late' : 'On Time',
-//         isLate ? 'orange' : 'green',
-//         'clock'
-//       );
-//     }
-
-//     if (record.checkOut && record.checkOut !== '-') {
-//       const checkOutDate = new Date(
-//         `${record.date} ${record.checkOut}`
-//       );
-
-//       addActivity(
-//         `${record.id}-out`,
-//         'Checked Out',
-//         checkOutDate,
-//         record.workHours || 'Completed',
-//         'gray',
-//         'clock'
-//       );
-//     }
-//   });
-
-//   // Newest activity first
-//   return items.sort((a, b) => b.sortTime - a.sortTime);
-// }, []);
 
 
 
@@ -713,6 +482,27 @@ const formatTime = (iso?: string | null) =>
 
 const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${action}&attendance=${attendance?.state}`);
 
+
+
+
+
+//  for   card Calculation
+
+    const CurrentMonthWorkingDays = Array.from(
+  { length: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate() },
+  (_, i) => new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1)
+).filter(date => date.getDay() !== 0).length;
+
+                //const currentMonthDays = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();  
+       
+
+                  //console.log("attendanceData------------------>",attendanceData);
+                const totalPresentDays = attendanceData.length;
+                const totalAbsentDays = CurrentMonthWorkingDays - totalPresentDays;
+                const totalLateDays = attendanceData.filter(r => r.status === 'late').length;
+                const totalWorkHours = attendanceData.reduce((sum, r) => sum + r.workMinutes, 0);
+                const totalWorkHoursFormatted = `${Math.floor(totalWorkHours / 60)}h ${totalWorkHours % 60}m`;
+
   return (
     <div className={styles.attendancePageWrapper}>
       {/* Breadcrumb & Header */}
@@ -808,6 +598,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
 
             </div>
 
+
             <div className={styles.statsGrid}>
               <div className={styles.statCard}>
                 <div className={styles.statHeader}>
@@ -816,7 +607,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   </div>
                 </div>
                 <div className={styles.statLabel}>Present</div>
-                <div className={styles.statValue}>18 <span className={styles.statUnit}>Days</span></div>
+                <div className={styles.statValue}>{totalPresentDays} <span className={styles.statUnit}>Days</span></div> 
                 <div className={styles.progressTrack}>
                   <div className={styles.progressBar} style={{ width: '80%', backgroundColor: '#10b981' }}></div>
                 </div>
@@ -829,7 +620,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   </div>
                 </div>
                 <div className={styles.statLabel}>Absent</div>
-                <div className={styles.statValue}>1 <span className={styles.statUnit}>Day</span></div>
+                <div className={styles.statValue}>{totalAbsentDays} <span className={styles.statUnit}>Days <br></br> Out of <b style={{ fontSize: '20px' }}>{CurrentMonthWorkingDays}</b> Working Days</span></div>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressBar} style={{ width: '10%', backgroundColor: '#ef4444' }}></div>
                 </div>
@@ -842,7 +633,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   </div>
                 </div>
                 <div className={styles.statLabel}>Late</div>
-                <div className={styles.statValue}>2 <span className={styles.statUnit}>Days</span></div>
+                <div className={styles.statValue}>{totalLateDays} <span className={styles.statUnit}>Days</span></div>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressBar} style={{ width: '20%', backgroundColor: '#f59e0b' }}></div>
                 </div>
@@ -855,7 +646,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   </div>
                 </div>
                 <div className={styles.statLabel}>Work Hours</div>
-                <div className={styles.statValue}> <span className={styles.statUnit}>Hours</span></div>
+                <div className={styles.statValue}>{totalWorkHoursFormatted} <span className={styles.statUnit}>Hours</span></div>
                 <div className={styles.progressTrack}>
                   <div className={styles.progressBar} style={{ width: '65%', backgroundColor: '#8b5cf6' }}></div>
                 </div>
@@ -873,10 +664,27 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
             <div className={styles.historyHeader}>
               <h3>Attendance History</h3>
               <div className={styles.selectWrapper}>
-                <Calendar size={14} className={styles.selectIcon} />
-                <select className={styles.monthSelect}>
+                {/* <Calendar size={14} className={styles.selectIcon} /> */}
+                {/* <select className={styles.monthSelect}>
                   <option>September 2026</option>
-                </select>
+                </select> */}
+
+     <LocalizationProvider dateAdapter={AdapterDayjs}>
+  <DatePicker
+    views={['year', 'month']}
+    openTo="month"
+    format="MMMM YYYY"
+    value={dayjs(currentDate)}
+    onChange={datePickerHandler}
+    slotProps={{
+      textField: {
+        size: 'small',
+        fullWidth: true,
+      },
+    }}
+  />
+</LocalizationProvider>
+
               </div>
             </div>
 
@@ -895,47 +703,19 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                 </thead>
 
                 <tbody>
-  {histLoading && (
-    <tr><td colSpan={7}>Loading attendance history…</td></tr>
-  )}
+                  {histLoading && (
+                    <tr><td colSpan={7}>Loading attendance history…</td></tr>
+                  )}
 
-  {!histLoading && histError && (
-    <tr><td colSpan={7} role="alert">{histError}</td></tr>
-  )}
+                  {!histLoading && histError && (
+                    <tr><td colSpan={7} role="alert">{histError}</td></tr>
+                  )}
 
-  {!histLoading && !histError && attendanceData.length === 0 && (
-    <tr><td colSpan={7}>No attendance records for this month.</td></tr>
-  )}
+                  {!histLoading && !histError && attendanceData.length === 0 && (
+                    <tr><td colSpan={7}>No attendance records for this month.</td></tr>
+                  )}
 
-  {!histLoading && !histError && attendanceData.map((record) => (
-    <tr key={record.id}>
-      <td>{record.date}</td>
-      <td>{record.day}</td>
-      <td>{record.checkIn}</td>
-      <td>{record.checkOut}</td>
-      <td>{record.workHours}</td>
-      <td>
-        <span className={`${styles.tableBadge} ${styles[record.status]}`}>
-          <span className={styles.badgeDot}></span>
-          {record.status === 'halfday'
-            ? 'Half Day'
-            : record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-        </span>
-      </td>
-      <td>
-        {record.checkOut !== '-' ? (
-          <button className={styles.actionLink} onClick={() => setSelectedRecord(record)}>
-            View
-          </button>
-        ) : (
-          <span className={styles.dash}>-</span>
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
-                {/* <tbody>
-                  {attendanceData.map((record) => (
+                  {!histLoading && !histError && attendanceData.map((record) => (
                     <tr key={record.id}>
                       <td>{record.date}</td>
                       <td>{record.day}</td>
@@ -945,7 +725,9 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                       <td>
                         <span className={`${styles.tableBadge} ${styles[record.status]}`}>
                           <span className={styles.badgeDot}></span>
-                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          {record.status === 'halfday'
+                            ? 'Half Day'
+                            : record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                         </span>
                       </td>
                       <td>
@@ -959,7 +741,8 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                       </td>
                     </tr>
                   ))}
-                </tbody> */}
+                </tbody>
+          
               </table>
             </div>
           </div>
@@ -972,71 +755,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
             {renderCalendarContent()}
           </div>
 
-          {/* Recent Activity */}
-          {/* <div className={styles.recentActivity}>
-            <div className={styles.activityHeader}>
-              <h3>Recent Activity</h3>
-              <a href="#" className={styles.viewAllLink}>View All</a>
-            </div>
-
-            <div className={styles.activityList}>
-              <div className={styles.activityItem}>
-                <div className={`${styles.activityIcon} ${styles.greenIconBg}`}>
-                  <Clock size={16} className={styles.greenText} />
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityTitle}>Checked In</p>
-                  <p className={styles.activityTime}>{attendance?.canCheckIn}</p>
-                </div>
-                <span className={styles.pillGreen}>On Time</span>
-              </div>
-
-              <div className={styles.activityItem}>
-                <div className={`${styles.activityIcon} ${styles.orangeIconBg}`}>
-                  <Clock size={16} className={styles.orangeText} />
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityTitle}>Late Check-In</p>
-                  <p className={styles.activityTime}>31 Aug 2026, 09:45 AM</p>
-                </div>
-                <span className={styles.pillOrange}>Late</span>
-              </div>
-
-              <div className={styles.activityItem}>
-                <div className={`${styles.activityIcon} ${styles.redIconBg}`}>
-                  <Clock size={16} className={styles.redText} />
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityTitle}>Checked Out</p>
-                  <p className={styles.activityTime}>29 Aug 2026, 05:50 PM</p>
-                </div>
-                <span className={styles.pillGray}>8h 40m</span>
-              </div>
-
-              <div className={styles.activityItem}>
-                <div className={`${styles.activityIcon} ${styles.greenIconBg}`}>
-                  <Clock size={16} className={styles.greenText} />
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityTitle}>Checked In</p>
-                  <p className={styles.activityTime}>29 Aug 2026, 09:10 AM</p>
-                </div>
-                <span className={styles.pillGreen}>On Time</span>
-              </div>
-
-              <div className={styles.activityItem}>
-                <div className={`${styles.activityIcon} ${styles.redIconBg}`}>
-                  <UserX size={16} className={styles.redText} />
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityTitle}>Absent</p>
-                  <p className={styles.activityTime}>30 Aug 2026</p>
-                </div>
-                <span className={styles.pillRed}>Absent</span>
-              </div>
-            </div>
-          </div> */}
-
+          
           <div className={styles.recentActivity}>
   <div className={styles.activityHeader}>
     <h3>Recent Activity</h3>
@@ -1048,76 +767,76 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
     )}
   </div>
 
-  <div className={styles.activityList}>
-    {attLoading ? (
-      <p>Loading attendance activities...</p>
-    ) : error && recentActivities.length === 0 ? (
-      <p role="alert">Unable to load attendance activities.</p>
-    ) : recentActivities.length === 0 ? (
-      <p>No attendance activity found.</p>
-    ) : (
-      recentActivities.map((item) => (
-        <div className={styles.activityItem} key={item.id}>
-          <div
-            className={`${styles.activityIcon} ${
-              item.type === 'green'
-                ? styles.greenIconBg
-                : item.type === 'orange'
-                ? styles.orangeIconBg
-                : item.type === 'red'
-                ? styles.redIconBg
-                : item.type === 'blue'
-                ? styles.blueIconBg
-                : styles.redIconBg
-            }`}
-          >
-            <Clock
-              size={16}
-              className={
-                item.type === 'green'
-                  ? styles.greenText
-                  : item.type === 'orange'
-                  ? styles.orangeText
-                  : item.type === 'blue'
-                  ? styles.blueText
-                  : styles.redText
-              }
-            />
-          </div>
+        <div className={styles.activityList}>
+          {attLoading ? (
+            <p>Loading attendance activities...</p>
+          ) : error && recentActivities.length === 0 ? (
+            <p role="alert">Unable to load attendance activities.</p>
+          ) : recentActivities.length === 0 ? (
+            <p>No attendance activity found.</p>
+          ) : (
+            recentActivities.map((item) => (
+              <div className={styles.activityItem} key={item.id}>
+                <div
+                  className={`${styles.activityIcon} ${
+                    item.type === 'green'
+                      ? styles.greenIconBg
+                      : item.type === 'orange'
+                      ? styles.orangeIconBg
+                      : item.type === 'red'
+                      ? styles.redIconBg
+                      : item.type === 'blue'
+                      ? styles.blueIconBg
+                      : styles.redIconBg
+                  }`}
+                >
+                  <Clock
+                    size={16}
+                    className={
+                      item.type === 'green'
+                        ? styles.greenText
+                        : item.type === 'orange'
+                        ? styles.orangeText
+                        : item.type === 'blue'
+                        ? styles.blueText
+                        : styles.redText
+                    }
+                  />
+                </div>
 
-          <div className={styles.activityContent}>
-            <p className={styles.activityTitle}>
-              {item.title}
+                <div className={styles.activityContent}>
+                  <p className={styles.activityTitle}>
+                    {item.title}
+                  </p>
+
+                  <p className={styles.activityTime}>
+                    {item.time}
+                  </p>
+                </div>
+
+                <span
+                  className={
+                    item.type === 'green'
+                      ? styles.pillGreen
+                      : item.type === 'orange'
+                      ? styles.pillOrange
+                      : item.type === 'red'
+                      ? styles.pillRed
+                      : styles.pillGray
+                  }
+                >
+                  {item.badge}
+                </span>
+              </div>
+            ))
+          )}
+
+          {!attLoading && error && recentActivities.length > 0 && (
+            <p className={styles.activityRefreshing}>
+              Could not refresh. Showing previously loaded activities.
             </p>
-
-            <p className={styles.activityTime}>
-              {item.time}
-            </p>
-          </div>
-
-          <span
-            className={
-              item.type === 'green'
-                ? styles.pillGreen
-                : item.type === 'orange'
-                ? styles.pillOrange
-                : item.type === 'red'
-                ? styles.pillRed
-                : styles.pillGray
-            }
-          >
-            {item.badge}
-          </span>
+          )}
         </div>
-      ))
-    )}
-
-    {!attLoading && error && recentActivities.length > 0 && (
-      <p className={styles.activityRefreshing}>
-        Could not refresh. Showing previously loaded activities.
-      </p>
-    )}
-  </div>
 </div>
 
           {/* Leave Request Card */}
@@ -1150,4 +869,3 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
 };
 
 export default AttendancePage;  
-

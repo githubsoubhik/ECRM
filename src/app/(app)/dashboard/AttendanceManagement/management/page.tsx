@@ -24,7 +24,7 @@ import {
 } from "../../../../data/attendanceData";
 import { AttendanceCtx, EMPTY_FILTERS, VIEWS, type AttApi, type Filters, type Member, type ViewKey } from "./_components/context";
 import { useIsMobile } from "./_components/ui";
-import DailyView from "./_components/DailyView";
+
 import MonthlyView from "./_components/MonthlyView";
 import CalendarView from "./_components/CalendarView";
 import EmployeeView from "./_components/EmployeeView";
@@ -32,6 +32,9 @@ import ReportsView from "./_components/ReportsView";
 import { ImportModal, MarkModal, ProfileModal, SettingsModal } from "./_components/Modals";
 import styles from "./attendance.module.css";
 import { fetchWithAuth } from "../../../../../../lib/fetchWithAuth";
+
+import { useAllAttendance, type DailyAttendanceRecord } from '@/app/customHook/useAttendanceHistory'; 
+import DailyView from './_components/DailyView';
 
 type ModalState = { kind: "mark"; ids: string[]; date: string } | { kind: "import" } | { kind: "settings" } | { kind: "profile"; id: string } | null;
 
@@ -63,6 +66,10 @@ export default function AttendanceManagementPage() {
   const [toast, setToast] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
+
+  const closeModal = useCallback(() => {
+  setModal(null);
+}, []);
   // Refresh live data every minute and when another tab changes it.
   useEffect(() => {
     const bump = () => setVersion((n) => n + 1);
@@ -82,6 +89,15 @@ export default function AttendanceManagementPage() {
   const ctx: AttContext = useMemo(() => loadContext(), [version, ready]);
   const view: ViewKey = viewState ?? (ready ? viewFromUrl() : "daily");
   const date = dateState ?? ctx.today;
+
+
+  // Fetch all employees' attendance for the selected date
+const {
+  records: dailyAttendance,
+  loading: dailyLoading,
+  error: dailyError,
+  refetch: refetchDailyAttendance,
+} = useAllAttendance(ready ? date : "");
 
   const employees: Member[] = useMemo(
     () => (ready ? buildTeam(loadHistory(), loadLeaveIds()).map((e) => ({ ...e, employmentType: employmentTypeOf(e) })) : []),
@@ -225,13 +241,20 @@ export default function AttendanceManagementPage() {
     view,
     setView,
     isMobile,
-    filters,
+    filters,  
     setFilters,
     departments,
     applyFilters,
     selectedEmp,
     setSelectedEmp,
-    openMark: (opts) => setModal({ kind: "mark", ids: opts?.ids ?? [], date: opts?.date ?? (date > ctx.today ? ctx.today : date) }),
+    //openMark: (opts) => setModal({ kind: "mark", ids: opts?.ids ?? [], date: opts?.date ?? (date > ctx.today ? ctx.today : date) }),
+    openMark: (opts) => {
+      const requestedDate = opts?.date ?? date;
+      const markDate = requestedDate > ctx.today ? ctx.today : requestedDate;
+
+      setDate(markDate);
+      setModal({ kind: "mark", ids: opts?.ids ?? [], date: markDate });
+    },
     quickMark,
     resetRecord,
     openImport: () => setModal({ kind: "import" }),
@@ -242,12 +265,26 @@ export default function AttendanceManagementPage() {
     refresh,
   };
 
-  const closeModal = useCallback(() => setModal(null), []);
-  const saved = (message: string) => {
+  // const closeModal = useCallback(() => setModal(null), []);
+  // const saved = (message: string) => {
+  //   setModal(null);
+  //   refresh();
+  //   notify(message);
+  // };
+
+
+
+
+
+const saved = useCallback(
+  (message: string) => {
     setModal(null);
     refresh();
+    void refetchDailyAttendance();
     notify(message);
-  };
+  },
+  [refresh, refetchDailyAttendance, notify],
+);
 
   if (!ready || !date) {
     return (
@@ -261,34 +298,197 @@ export default function AttendanceManagementPage() {
 
 
 
-
+console.log("dailyAttendance,,,,,,,,,,,,,,,,,,,,,,,", dailyAttendance);
      
 
+  // return (
+      //     <AttendanceCtx.Provider value={api}>
+      //       <div className={styles.page}>
+
+      //       {view === "daily" && (
+      //   <DailyView
+      //     dailyAttendance={dailyAttendance}
+      //     dailyLoading={dailyLoading}
+      //     dailyError={dailyError}
+      //   />
+      // )}
+      //         {view === "monthly" && <MonthlyView />}
+      //         {view === "calendar" && <CalendarView />}
+      //         {view === "employee" && <EmployeeView />}
+      //         {view === "reports" && <ReportsView />}
+
+      //         {view === "daily" && (
+      //   <>
+      //     {/* <DailyView dailyAttendance={dailyAttendance} /> */}
+
+      //     <div style={{ marginTop: 24 }}>
+      //       <h2>Daily Attendance API Data</h2>
+
+      //       <p>
+      //         Selected Date: <strong>{date}</strong>
+      //       </p>
+
+      //       <button
+      //         type="button"
+      //         onClick={() => refetchDailyAttendance()}
+      //         disabled={dailyLoading}
+      //       >
+      //         {dailyLoading ? 'Loading...' : 'Refresh Attendance'}
+      //       </button>
+
+      //       {dailyLoading ? (
+      //         <p>Loading attendance records...</p>
+      //       ) : dailyError ? (
+      //         <p role="alert">{dailyError}</p>
+      //       ) : dailyAttendance.length === 0 ? (
+      //         <p>No attendance records found for {date}.</p>
+      //       ) : (
+      //         <div style={{ overflowX: 'auto', marginTop: 16 }}>
+      //           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      //             <thead>
+      //               <tr>
+      //                 <th>Employee ID</th>
+      //                 <th>Department</th>
+      //                 <th>Check In</th>
+      //                 <th>Check Out</th>
+      //                 <th>Work Minutes</th>
+      //                 <th>Status</th>
+      //               </tr>
+      //             </thead>
+
+      //             <tbody>
+      //               {dailyAttendance.map((record) => (
+      //                 <tr key={record._id}>
+      //                   <td>{record.employeeId}</td>
+      //                   <td>{record.department || '-'}</td>
+      //                   <td>
+      //                     {record.checkIn
+      //                       ? new Date(record.checkIn).toLocaleTimeString('en-IN')
+      //                       : '-'}
+      //                   </td>
+      //                   <td>
+      //                     {record.checkOut
+      //                       ? new Date(record.checkOut).toLocaleTimeString('en-IN')
+      //                       : '-'}
+      //                   </td>
+      //                   <td>{record.workMinutes ?? 0}</td>
+      //                   <td>{record.status}</td>
+      //                 </tr>
+      //               ))}
+      //             </tbody>
+      //           </table>
+      //         </div>
+      //       )}
+      //     </div>
+      //   </>
+      //   )}
+
+      //         {modal?.kind === "mark" && (
+      //           <MarkModal key={`${modal.ids.join()}|${modal.date}`} initialIds={modal.ids} initialDate={modal.date} onClose={closeModal} onSaved={saved} />
+      //         )}
+      //         {modal?.kind === "import" && <ImportModal onClose={closeModal} onSaved={saved} />}
+      //         {modal?.kind === "settings" && <SettingsModal onClose={closeModal} onSaved={saved} />}
+      //         {modal?.kind === "profile" && <ProfileModal employeeId={modal.id} onClose={closeModal} />}
+
+      //         {toast && (
+      //           <div className={styles.toast} role="status">
+      //             <CheckCircle2 size={18} /> {toast}
+      //           </div>
+      //         )}
+      //       </div>
+
+
+      //     </AttendanceCtx.Provider>
+
+//       <AttendanceCtx.Provider value={api}>
+//   <div className={styles.page}>
+
+//     {view === 'daily' && (
+//       <DailyView
+//         dailyAttendance={dailyAttendance}
+//         dailyLoading={dailyLoading}
+//         dailyError={dailyError}
+//         refetch= {refetchDailyAttendance}
+//       />
+//     )}
+
+//     {view === 'monthly' && <MonthlyView />}
+//     {view === 'calendar' && <CalendarView />}
+//     {view === 'employee' && <EmployeeView />}
+//     {view === 'reports' && <ReportsView />}
+
+//   </div>
+// </AttendanceCtx.Provider>
+
+  // );
+
   return (
-    <AttendanceCtx.Provider value={api}>
-      <div className={styles.page}>
-        {view === "daily" && <DailyView />}
-        {view === "monthly" && <MonthlyView />}
-        {view === "calendar" && <CalendarView />}
-        {view === "employee" && <EmployeeView />}
-        {view === "reports" && <ReportsView />}
+  <AttendanceCtx.Provider value={api}>
+    <div className={styles.page}>
+      {view === "daily" && (
+        <DailyView
+          dailyAttendance={dailyAttendance}
+          dailyLoading={dailyLoading}
+          dailyError={dailyError}
+          refetch={refetchDailyAttendance}
+        />
+      )}
 
-        {modal?.kind === "mark" && (
-          <MarkModal key={`${modal.ids.join()}|${modal.date}`} initialIds={modal.ids} initialDate={modal.date} onClose={closeModal} onSaved={saved} />
-        )}
-        {modal?.kind === "import" && <ImportModal onClose={closeModal} onSaved={saved} />}
-        {modal?.kind === "settings" && <SettingsModal onClose={closeModal} onSaved={saved} />}
-        {modal?.kind === "profile" && <ProfileModal employeeId={modal.id} onClose={closeModal} />}
+      {view === "monthly" && <MonthlyView />}
+      {view === "calendar" && <CalendarView />}
+      {view === "employee" && <EmployeeView />}
+      {view === "reports" && <ReportsView />}
 
-        {toast && (
-          <div className={styles.toast} role="status">
-            <CheckCircle2 size={18} /> {toast}
-          </div>
-        )}
-      </div>
+      {/* Mark / Update Attendance Modal */}
+      {modal?.kind === "mark" && (
+        // <MarkModal
+        //   key={`${modal.ids.join(",")}|${modal.date}`}
+        //   initialIds={modal.ids}
+        //   initialDate={modal.date}
+        //   onClose={closeModal}
+        //   onSaved={saved}
+        // />
+          <MarkModal
+            key={`${modal.ids.join(",")}|${modal.date}`}
+            initialIds={modal.ids}
+            initialDate={modal.date}
+            onClose={closeModal}
+            onSaved={saved}
+            // onPartialSave={() => void refetchDailyAttendance()}
 
+            today={ctx.today}
+            onDateChange={setDate}
+            onReload={refetchDailyAttendance}
+            dailyAttendance={dailyAttendance}
+              dailyLoading={dailyLoading}
+          dailyError={dailyError}
+     
 
-    </AttendanceCtx.Provider>
+          />        
+      )}
 
-  );
+      {modal?.kind === "import" && (
+        <ImportModal onClose={closeModal} onSaved={saved} />
+      )}
+
+      {modal?.kind === "settings" && (
+        <SettingsModal onClose={closeModal} onSaved={saved} />
+      )}
+
+      {modal?.kind === "profile" && (
+        <ProfileModal
+          employeeId={modal.id}
+          onClose={closeModal}
+        />
+      )}
+
+      {toast && (
+        <div className={styles.toast} role="status">
+          <CheckCircle2 size={18} />
+          {toast}
+        </div>
+      )}
+    </div>
+  </AttendanceCtx.Provider>
+);
 }

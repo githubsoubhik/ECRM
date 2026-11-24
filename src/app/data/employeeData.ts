@@ -3,6 +3,8 @@
 // The history is the single source of truth: each employee's day log is rebuilt
 // from it, so deleting a history row instantly lets that employee mark again.
 
+import { useEffect, useState } from "react";
+
 
 export type AttendanceAction = 'check-in' | 'check-out' | 'break-start' | 'break-end';
 
@@ -793,3 +795,69 @@ export function setTempStatus(id: string, status: TeamStatus | null) {
   if (status) tempStatus.set(id, status);
   else tempStatus.delete(id);
 }
+
+
+type DirectoryEmployee = {
+  employeeId: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: string | null;
+};
+
+type EmployeeDirectory = {
+  success: boolean;
+  count: number;
+  data: DirectoryEmployee[];
+};
+
+
+
+
+  
+const [empDirectory, setEmpDirectory] = useState<EmployeeDirectory | null>(null);
+const [empDirectoryError, setEmpDirectoryError] = useState("");
+
+useEffect(() => {
+  const controller = new AbortController();
+
+  async function loadEmployees() {
+    try {
+      const response = await fetch("/api/getAllEmployee", {
+        signal: controller.signal,
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Employee request failed (${response.status}).`);
+      }
+
+      const result: EmployeeDirectory = await response.json();
+
+      if (!result.success || !Array.isArray(result.data)) {
+        throw new Error("Unable to load employee details.");
+      }
+
+      if (!controller.signal.aborted) setEmpDirectory(result);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setEmpDirectoryError(
+          error instanceof Error ? error.message : "Unable to load employee details.",
+        );
+      }
+    }
+  }
+
+  void loadEmployees();
+  return () => controller.abort();
+}, []);
+
+
+const employeeById = new Map(
+  (empDirectory?.data ?? []).map((employee) => [
+    normalizeEmployeeId(employee.employeeId),
+    employee,
+  ] as const),
+);
+
+
+export { empDirectory, empDirectoryError, employeeById };
