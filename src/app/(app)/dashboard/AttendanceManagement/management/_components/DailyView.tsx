@@ -2,7 +2,7 @@
 
 // Daily View: one day's check-ins for everyone.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   ChevronLeft,
@@ -40,6 +40,23 @@ import { useAllAttendance } from '@/app/customHook/useAttendanceHistory';
 
 
 
+///   GET ALL EMPLOYEE 
+type DirectoryEmployee = {
+  employeeId: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: string | null;
+};
+
+type EmployeeDirectory = {
+  success: boolean;
+  count: number;
+  data: DirectoryEmployee[];
+};
+
+
+
+
 
 interface DailyViewProps {
   dailyAttendance: DailyAttendanceRecord[];
@@ -47,6 +64,10 @@ interface DailyViewProps {
   dailyError: string | null;
   refetch: () => void;
 }
+
+
+
+
 
 
 /* ------------------------------------------------------------------ */
@@ -78,6 +99,10 @@ export function DateStrip({ size }: { size: number }) {
   const setStart = (s: string) => setNav({ start: s, date, size });
 
   const days = Array.from({ length: size }, (_, i) => addDays(start, i));
+
+
+
+
 
 
 
@@ -161,6 +186,12 @@ const formatBreaks = (
   )).join(', ');
 };
 
+
+
+
+
+
+
 export default function DailyView({
   dailyAttendance,
   dailyLoading,
@@ -237,7 +268,55 @@ export default function DailyView({
   ];
 
   // employee tortal count
-   
+
+
+
+    
+  const [directory, setDirectory] = useState<EmployeeDirectory | null>(null);
+  const [directoryError, setDirectoryError] = useState("");
+  
+  useEffect(() => {
+    const controller = new AbortController();
+  
+    async function loadEmployees() {
+      try {
+        const response = await fetch("/api/getAllEmployee", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Employee request failed (${response.status}).`);
+        }
+  
+        const result: EmployeeDirectory = await response.json();
+  
+        if (!result.success || !Array.isArray(result.data)) {
+          throw new Error("Unable to load employee details.");
+        }
+  
+        if (!controller.signal.aborted) setDirectory(result);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setDirectoryError(
+            error instanceof Error ? error.message : "Unable to load employee details.",
+          );
+        }
+      }
+    }
+  
+    void loadEmployees();
+    return () => controller.abort();
+  }, []);
+
+
+  const toatalEmployees = directory?.data?.length ?? 0;
+
+
+  
+
+
+     
 const s = useMemo(() => {
   const total = dailyAttendance.length;
 
@@ -245,8 +324,8 @@ const s = useMemo(() => {
     ["present", "late", "half-day"].includes(status ?? "")
   ).length;
 
-  const absent = records.filter(
-    ({ status }) => status === "absent"
+  const absent  = directory?.data?.length ? directory.data.length - present : records.filter(
+    ({ status }) => status === "present" || status === "late" || status === "half-day"
   ).length;
 
   const leave = records.filter(
@@ -294,6 +373,12 @@ const s = useMemo(() => {
   //   </section>
   // );
 
+
+
+  // employees  data 
+
+
+
   const statCards = (
   <section className={cx(styles.stats, styles.stats4)}>
 
@@ -304,7 +389,8 @@ const s = useMemo(() => {
       color="#4f6bed"
       soft="#e8ecfd"
       label="Total Employees"
-      value={dailyLoading ? "..." : s.total}
+      value = {toatalEmployees}  
+       
     />
 
     {/* Present */}
@@ -316,7 +402,7 @@ const s = useMemo(() => {
       label={isToday ? "Present Today" : "Present"}
       value={dailyLoading ? "..." : s.present}
       badge={{
-        text: `${pct(s.present, s.total)}%`,
+        text: `${pct(s.present, toatalEmployees)}%`,
         color: "#15803d",
         soft: "#e3f6ea",
       }}
@@ -331,7 +417,7 @@ const s = useMemo(() => {
       label={isToday ? "Absent Today" : "Absent"}
       value={dailyLoading ? "..." : s.absent}
       badge={{
-        text: `${pct(s.absent, s.total)}%`,
+        text: `${pct(s.absent, toatalEmployees)}%`,
         color: "#dc2626",
         soft: "#fde8e8",
       }}
@@ -346,7 +432,7 @@ const s = useMemo(() => {
       label="On Leave"
       value={dailyLoading ? "..." : s.leave}
       badge={{
-        text: `${pct(s.leave, s.total)}%`,
+        text: `${pct(s.leave, toatalEmployees)}%`,
         color: "#b7791f",
         soft: "#fef3dc",
       }}

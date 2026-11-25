@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 
 
+
 export type AttendanceAction = 'check-in' | 'check-out' | 'break-start' | 'break-end';
 
 export interface Employee {
@@ -14,14 +15,13 @@ export interface Employee {
   designation: string;
   team: string;
   officeLocation: string;
-  photoUrl: string;      // put real photos in /public/employees/emp001.jpg
+  photoUrl: string;    
   email: string;
-  shiftStart: string;    // HH:MM, used to decide Present vs Late
-  // Added for the Team page (optional, so nothing else has to change)
-  phone?: string;        // shown on the team cards
-  department?: string;   // falls back to `team` without the word "Team"
-   role?: string;          // 'Admin' | 'Employee' ...
-  mongoId?: string;       // _id
+  shiftStart: string;    
+  phone?: string;        
+  department?: string;   
+   role?: string;          
+  mongoId?: string;       
   isActive?: boolean;
 }
 
@@ -810,54 +810,54 @@ type EmployeeDirectory = {
   data: DirectoryEmployee[];
 };
 
+// const [empDirectory, setEmpDirectory] = useState<EmployeeDirectory | null>(null);
+// const [empDirectoryError, setEmpDirectoryError] = useState("");
 
 
 
   
-const [empDirectory, setEmpDirectory] = useState<EmployeeDirectory | null>(null);
-const [empDirectoryError, setEmpDirectoryError] = useState("");
-
-useEffect(() => {
-  const controller = new AbortController();
-
-  async function loadEmployees() {
-    try {
-      const response = await fetch("/api/getAllEmployee", {
-        signal: controller.signal,
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Employee request failed (${response.status}).`);
-      }
-
-      const result: EmployeeDirectory = await response.json();
-
-      if (!result.success || !Array.isArray(result.data)) {
-        throw new Error("Unable to load employee details.");
-      }
-
-      if (!controller.signal.aborted) setEmpDirectory(result);
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        setEmpDirectoryError(
-          error instanceof Error ? error.message : "Unable to load employee details.",
-        );
-      }
-    }
-  }
-
-  void loadEmployees();
-  return () => controller.abort();
-}, []);
 
 
-const employeeById = new Map(
-  (empDirectory?.data ?? []).map((employee) => [
-    normalizeEmployeeId(employee.employeeId),
-    employee,
-  ] as const),
-);
+// useEffect(() => {
+//   const controller = new AbortController();
+
+//   async function loadEmployees() {
+//     try {
+//       const response = await fetch("/api/getAllEmployee", {
+//         signal: controller.signal,
+//         cache: "no-store",
+//       });
+
+//       if (!response.ok) {
+//         throw new Error(`Employee request failed (${response.status}).`);
+//       }
+
+//       const result: EmployeeDirectory = await response.json();
+
+//       if (!result.success || !Array.isArray(result.data)) {
+//         throw new Error("Unable to load employee details.");
+//       }
+
+//       if (!controller.signal.aborted) setEmpDirectory(result);
+//     } catch (error) {
+//       if (!controller.signal.aborted) {
+//         setEmpDirectoryError(
+//           error instanceof Error ? error.message : "Unable to load employee details.",
+//         );
+//       }
+//     }
+//   }
+
+//   void loadEmployees();
+//   return () => controller.abort();
+// }, []);
 
 
-export { empDirectory, empDirectoryError, employeeById };
+// const employeeById = new Map(
+//   (empDirectory?.data ?? []).map((employee) => [
+//     normalizeEmployeeId(employee.employeeId),
+//     employee,
+//   ] as const),
+// );
+
+
