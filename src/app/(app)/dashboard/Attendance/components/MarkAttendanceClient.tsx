@@ -2,9 +2,6 @@
 
 'use client';
 
-// src/app/(app)/dashboard/Attendance/components/MarkAttendanceClient.tsx
-// Self-service mode: the logged-in employee marks their own attendance.
-// The server (JWT cookie) decides who the user is; the browser never picks an employee.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -161,67 +158,12 @@ const {
 
   /* ---------------- Today's record from the server ---------------- */
 
-  // useEffect(() => {
-  //   let alive = true;
-  //   (async () => {
-  //     try {
-  //       const rec = (await apiToday()).data;
-  //       const events: AttendanceEvent[] = [];
-
-  //       if (rec?.checkIn) {
-  //         events.push(newEvent(currentUser, 'check-in', new Date(rec.checkIn), rec.checkInPhoto ?? null, null));
-  //         for (const b of rec.breaks ?? []) {
-  //           events.push(newEvent(currentUser, 'break-start', new Date(b.start), null, null));
-  //           if (b.end) events.push(newEvent(currentUser, 'break-end', new Date(b.end), null, null));
-  //         }
-  //         if (rec.checkOut) {
-  //           events.push(newEvent(currentUser, 'check-out', new Date(rec.checkOut), null, null));
-  //         }
-  //       }
-  //       if (!alive) return;
-
-  //       const sorted = sortHistory(events);
-  //       saveHistory(sorted);
-  //       setHistory(sorted);
-
-  //       const inBreak = (rec?.breaks ?? []).some((b: { end?: string | null }) => !b.end);
-  //       setAction(!rec?.checkIn ? 'check-in' : rec.checkOut ? 'check-in' : inBreak ? 'break-end' : 'break-start');
-  //     } catch {
-  //       // Offline or server error: show only this user's local rows.
-  //       if (alive) {
-  //         setHistory(sortHistory(loadHistory().filter((e) => e.employeeId === currentUser.id)));
-  //       }
-  //     }
-  //   })();
-  //   return () => {
-  //     alive = false;
-  //   };
-  // }, [currentUser]);
-
-  // Keep the card in sync if the user object changes (e.g. after refresh()).
+ 
   useEffect(() => {
     setEmployee(currentUser);
   }, [currentUser]);
 
-  // ?action=check-in from the dashboard button.
-  // useEffect(() => {
-  //   const requested = params.get('action');
-  //   if (!isAction(requested)) return;
 
-  //   const timer = window.setTimeout(() => {
-  //     if (requested === 'check-out') {
-  //       setConfirmCheckout(true);
-  //       return;
-  //     }
-  //     setAction(requested);
-  //     if (needsPhoto(requested)) {
-  //       setActionLocked(true);
-  //       setAutoStart(true);
-  //     }
-  //   }, 0);
-
-  //   return () => window.clearTimeout(timer);
-  // }, [params]);
 
 
   const urlHandled = useRef(false);
@@ -239,54 +181,6 @@ const {
 
   /* ---------------- Derived ---------------- */
 
-  //const log = useMemo(() => buildLog(selectedId, history), [selectedId, history]);
-
-  // const permission = canDo(action, log);
-  // const status = attendanceStatus(log, employee);
-  // const working = onBreak(log) ? 'On Break' : log.checkOut ? 'Checked Out' : log.checkIn ? 'Checked In' : 'Not Marked';
-  // const busy = ['review', 'verifying', 'matching'].includes(stage);
-  // const flowActive = actionLocked || busy;
-  // const meta = ACTION_META[action];
-  // const photoRequired = needsPhoto(action);
-  // const openBreak = log.breaks.find((b) => !b.end) ?? null;
-  // const dayDone = !!log.checkOut;
-
-
-
-  // const summary = useMemo(() => {
-  //   const ref = now ?? new Date();
-  //   return {
-  //     checkIn: formatTime(log.checkIn),
-  //     checkOut: formatTime(log.checkOut),
-  //     breaks: durationLabel(breakMinutes(log, ref)),
-  //     worked: durationLabel(workedMinutes(log, ref)),
-  //   };
-  // }, [log, now]);
-
-    // type StateKey = 'not_checked_in' | 'checked_in' | 'on_break' | 'checked_out';
-    // const serverState = (attendance?.state ?? 'not_checked_in') as StateKey;
-
-  // Which buttons to show depends on today's state.
-  // const visibleActions: AttendanceAction[] = log.checkOut
-  //   ? []
-  //   : !log.checkIn
-  //   ? ['check-in']
-  //   : openBreak
-  //   ? ['break-end', 'check-out']
-  //   : ['break-start', 'check-out'];
-
-
-//   const ACTIONS_BY_STATE: Record<StateKey, AttendanceAction[]> = {
-//   not_checked_in: ['check-in'],
-//   checked_in:     ['break-start', 'check-out'],
-//   on_break:       ['break-end', 'check-out'],
-//   checked_out:    [],
-//  };
-
-
-
-
-//new  code  
 
 type StateKey =
   | 'not_checked_in'
@@ -392,32 +286,9 @@ useEffect(() => {
   }
 }, [attLoading, params, serverState]);
 
-//new code///
 
 
-//  const visibleActions = loading ? [] : ACTIONS_BY_STATE[serverState];
 
-// type StateKey =
-//   | 'not_checked_in'
-//   | 'checked_in'
-//   | 'on_break'
-//   | 'checked_out';
-
-// // Show actions according to the server attendance state.
-// const visibleActions: Record<StateKey, AttendanceAction[]> = {
-//   not_checked_in: ['check-in'],
-//   checked_in: ['break-start', 'check-out'],
-//   on_break: ['break-end', 'check-out'],
-//   checked_out: [],
-// };
-
-// // State comes from useAttendance (API response).
-// const serverState = (attendance?.state ?? 'not_checked_in') as StateKey;
-
-// // Wait until the API response is loaded.
-// const actionsToShow: AttendanceAction[] = loading
-//   ? []
-//   : visibleActions[serverState] ?? [];
 
  
 
@@ -483,58 +354,7 @@ const history = useMemo<AttendanceEvent[]>(() => {
     setActionLocked(false);
   }, []);
 
-  // const commitEvent = useCallback(
-  //   (event: AttendanceEvent) => {
-  //     const updated = sortHistory([...history, event]);
-  //     saveHistory(updated);
-  //     setHistory(updated);
-  //     return updated;
-  //   },
-  //   [history]
-  // );
-
-  // const handleActionChange = (next: AttendanceAction) => {
-  //   if (flowActive && next !== action) return;
-
-  //   if (next === 'check-out') {
-  //    if (canDo('check-out')) setConfirmCheckout(true);
-  //     return;
-  //   }
-
-  //   // Break Start / Break End: no camera, just the timer panel.
-  //   if (!needsPhoto(next)) {
-  //     clearTimers();
-  //     setAction(next);
-  //     setActionLocked(false);
-  //     setStage('idle');
-  //     setResult(null);
-  //     setPhoto(null);
-  //     setPendingCapture(null);
-  //     setAutoStart(false);
-  //     return;
-  //   }
-
-  //   if (next === action) {
-  //     if (!canDo(next, log).allowed) return;
-  //     setActionLocked(true);
-  //     if (stage !== 'live' && stage !== 'starting') {
-  //       setStage('idle');
-  //       reopenCamera();
-  //     }
-  //     return;
-  //   }
-
-  //   setAction(next);
-  //   setActionLocked(canDo(next, log).allowed);
-  //   setPhoto(null);
-  //   setPendingCapture(null);
-  //   setResult(null);
-  //   setStage('idle');
-  //   if (canDo(next, log).allowed) reopenCamera();
-  //   else setAutoStart(false);
-  // };
-
-
+ 
   const handleActionChange = (next: AttendanceAction) => {
   if (attLoading || !canDo(next)) return;
 
@@ -591,19 +411,7 @@ const history = useMemo<AttendanceEvent[]>(() => {
     setAction('check-in');
   }, []);
 
-  // const confirmCheckoutNow = async () => {
-  //   try {
-  //     await apiCheckOut();
-  //     const at = new Date();
-  //     commitEvent(newEvent(employee, 'check-out', at, null, null));
-  //     setConfirmCheckout(false);
-  //     setNotice(`${employee.name} checked out at ${formatTime(at.toISOString())}`);
-  //     afterCheckOut();
-  //   } catch (error) {
-  //     setConfirmCheckout(false);
-  //     setNotice(error instanceof Error ? error.message : 'Unable to check out');
-  //   }
-  // };
+
 const confirmCheckoutNow = async () => {
   try {
     if (!canDo('check-out')) return;
@@ -623,25 +431,6 @@ const confirmCheckoutNow = async () => {
   }
 };
 
-  // const markBreak = async (breakAction: AttendanceAction) => {
-  //   if (!canDo(breakAction, log).allowed) return;
-  //   try {
-  //     if (breakAction === 'break-start') await apiBreakStart();
-  //     else await apiBreakEnd();
-
-  //     const at = new Date();
-  //     commitEvent(newEvent(employee, breakAction, at, null, null));
-  //     setNotice(`${employee.name} ${ACTION_META[breakAction].verb} at ${formatTime(at.toISOString())}`);
-  //     setAction(breakAction === 'break-start' ? 'break-end' : 'break-start');
-  //     setStage('idle');
-  //     setAutoStart(false);
-  //     setActionLocked(false);
-  //   } catch (error) {
-  //     setNotice(error instanceof Error ? error.message : 'Unable to update break');
-  //   }
-  // };
-
-  // Photo captured: it stays on screen until Submit.
   
   const markBreak = async (breakAction: AttendanceAction) => {
   if (!canDo(breakAction)) return;
@@ -681,50 +470,7 @@ const confirmCheckoutNow = async () => {
     setResult(null);
   }, []);
 
-  // capture = null means "mark without a photo" (development only).
-  // const submitAttendance = useCallback(
-  //   (capture: CaptureResult | null) => {
-  //     setStage('verifying');
 
-  //     const wait = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
-  //     wait(700, () => setStage('matching'));
-
-  //     wait(1800, async () => {
-  //       try {
-  //         let confidence: number | null = null;
-  //         if (capture) {
-  //           const verification = verifyFaceDemo(capture.metrics, employee.id);
-  //           setResult(verification);
-  //           if (!verification.ok) {
-  //             setStage('failed');
-  //             return;
-  //           }
-  //           confidence = verification.confidence;
-  //         }
-
-  //         const coords = await getCoords();
-  //         const api = await apiCheckIn(capture?.dataUrl ?? null, employee.id, coords);
-
-  //         const at = new Date();
-  //         commitEvent(newEvent(employee, 'check-in', at, api.data?.checkInPhoto ?? null, confidence));
-
-  //         setNotice(`${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`);
-  //         setStage('idle');
-  //         setPhoto(null);
-  //         setPendingCapture(null);
-  //         setAutoStart(false);
-  //         setActionLocked(false);
-  //         afterCheckIn();
-  //       } catch (error) {
-  //         const message = error instanceof Error ? error.message : 'Unable to mark attendance';
-  //         setResult({ ok: false, confidence: 0, message, employee: null });
-  //         setNotice(message);
-  //         setStage('failed');
-  //       }
-  //     });
-  //   },
-  //   [employee, commitEvent, afterCheckIn]
-  // );
 
   const submitAttendance = useCallback(
   (capture: CaptureResult | null) => {
@@ -793,22 +539,7 @@ const confirmCheckoutNow = async () => {
 
   const handleSkipPhoto = useCallback(() => submitAttendance(null), [submitAttendance]);
 
-  /* ---------------- History (delete / clear are development only) ---------------- */
-
-  // const handleDelete = (id: string) => {
-  //   const row = history.find((e) => e.id === id);
-  //   const updated = history.filter((e) => e.id !== id);
-  //   saveHistory(updated);
-  //   setHistory(updated);
-  //   if (row) setNotice(`Removed from this screen: ${ACTION_META[row.action].label}. The server record is unchanged.`);
-  // };
-
-  // const handleClearAll = () => {
-  //   saveHistory([]);
-  //   setHistory([]);
-  //   setNotice('Local history cleared. The server record is unchanged.');
-  // };
-
+ 
   const handleProfileSave = (updated: Employee) => {
     setEmployee(updated);
     saveProfile(updated);

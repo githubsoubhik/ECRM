@@ -137,7 +137,7 @@ const datePickerHandler = (value: Dayjs | null) => {
 };
 
 
-console.log("attendanceData------------------>",attendanceData);
+// console.log("attendanceData------------------>",attendanceData);
 
   const getMonthName = (monthIndex: number): string => {
     const months = [
@@ -200,7 +200,7 @@ console.log("attendanceData------------------>",attendanceData);
 
 
    
-console.log("records------------------>",records);
+// console.log("records------------------>",records);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -669,21 +669,21 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
                   <option>September 2026</option>
                 </select> */}
 
-     <LocalizationProvider dateAdapter={AdapterDayjs}>
-  <DatePicker
-    views={['year', 'month']}
-    openTo="month"
-    format="MMMM YYYY"
-    value={dayjs(currentDate)}
-    onChange={datePickerHandler}
-    slotProps={{
-      textField: {
-        size: 'small',
-        fullWidth: true,
-      },
-    }}
-  />
-</LocalizationProvider>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  views={['year', 'month']}
+                  openTo="month"
+                  format="MMMM YYYY"
+                  value={dayjs(currentDate)}
+                  onChange={datePickerHandler}
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                      fullWidth: true,
+                    },
+                  }}
+                />
+              </LocalizationProvider>
 
               </div>
             </div>
@@ -837,7 +837,7 @@ const go = (action: string) => router.push(`/dashboard/Attendance/mark?action=${
             </p>
           )}
         </div>
-</div>
+      </div>
 
           {/* Leave Request Card */}
           <div className={styles.leaveRequest}>

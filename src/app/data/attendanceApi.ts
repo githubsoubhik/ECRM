@@ -80,13 +80,30 @@ export async function apiEmployeeMonth(employeeId: string, month: string) {
   return json; // { success, count, data: [...] }
 }
 
-// all   attendance 
+// all   attendance  with Date
 
 export async function apiAllAttendance(date: string) {
   return request(`/all?date=${encodeURIComponent(date)}`, {
     method: 'GET',
   });
 }
+
+
+// all attandance  month  wise
+
+
+
+export async function apiAllAttendanceMonth(
+  month: string,
+  page = 1,
+  limit = 100
+) {
+  return request(
+    `/all?month=${encodeURIComponent(month)}&page=${page}&limit=${limit}`,
+    { method: "GET" }
+  );
+}
+
 
 
 export const apiCheckOut = () => request('/check-out', { method: 'POST' });

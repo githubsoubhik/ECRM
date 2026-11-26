@@ -1,104 +1,448 @@
+
+
+
+
 "use client";
 
-// Monthly View: register of every employee × every day of the month.
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  PenLine,
+  Plane,
+  RotateCcw,
+  SlidersHorizontal,
+  UserCheck,
+  UserX,
+  Users,
+} from "lucide-react";
 
-import { useMemo, useState } from "react";
-import { CalendarClock, ChevronLeft, ChevronRight, PenLine, Plane, RotateCcw, SlidersHorizontal, UserCheck, UserX, Users } from "lucide-react";
-import { STATUS_META, WEEKDAYS_SHORT, daysInMonth, employeeMonth, fmtTime, fromKey, monthAverages, monthKeys, pct } from "../../../../../data/attendanceData";
-import { EMPTY_FILTERS, useAtt, type Filters } from "./context";
+import {
+  STATUS_META,
+  WEEKDAYS_SHORT,
+  daysInMonth,
+  fmtTime,
+  fromKey,
+  pct,
+} from "@/app/data/attendanceData"
+
+// import { EMPTY_FILTERS, useAtt, type Filters } from "./context";
+import {
+  EMPTY_FILTERS,
+  useAtt,
+  isAttStatus,
+  type Filters,
+} from "./context";
+
 import { EmptyRows } from "./DailyView";
-import { AttendanceSummaryCard, LegendRow, MiniCalendar, PromoCard, QuickActions } from "./Sidebar";
-import { Avatar, MonthPicker, PageHeader, Pagination, RowsPerPage, SearchBox, SelectBox, StatCard, Tabs, cx, shortDept, usePaged } from "./ui";
+import {
+  AttendanceSummaryCard,
+  LegendRow,
+  MiniCalendar,
+  PromoCard,
+  QuickActions,
+} from "./Sidebar";
+import {
+  Avatar,
+  MonthPicker,
+  PageHeader,
+  Pagination,
+  RowsPerPage,
+  SearchBox,
+  SelectBox,
+  StatCard,
+  Tabs,
+  cx,
+  shortDept,
+  usePaged,
+} from "./ui";
+
+import { apiAllAttendanceMonth } from "@/app/data/attendanceApi";
 import styles from "../attendance.module.css";
 
-export default function MonthlyView() {
-  const { employees, year, month, setMonth, date, setDate, ctx, filters, setFilters, applyFilters, departments, isMobile, openMark, openProfile } = useAtt();
+interface ApiAttendanceRecord {
+  _id: string;
+  employeeId: string;
+  name?: string;
+  department?: string;
+  designation?: string;
+  dateKey: string;
+  status: string;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  photoUrl?: string;
+  source?: string;
+  workMinutes?: number;
+}
 
-  // Filters here apply on "Apply" (like the design); search applies instantly.
+interface ApiResponse {
+  success: boolean;
+  total: number;
+  data: ApiAttendanceRecord[];
+}
+
+const normalizeStatus = (status?: string) =>
+  String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+
+export default function MonthlyView() {
+  const {
+    year,
+    month,
+    setMonth,
+    date,
+    setDate,
+    ctx,
+    filters,
+    setFilters,
+    isMobile,
+    openMark,
+    openProfile,
+  } = useAtt();
+
   const [draft, setDraft] = useState<Filters>(filters);
   const [perPage, setPerPage] = useState(8);
   const [showFilters, setShowFilters] = useState(false);
 
-  const keys = useMemo(() => monthKeys(year, month), [year, month]);
+  // Live API data only
+  const [apiRecords, setApiRecords] = useState<ApiAttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+
+  const selectedMonth =
+    `${year}-${String(month + 1).padStart(2, "0")}`;
+
+  // Fetch all pages for the selected month
+  const fetchMonthlyData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setFetchError("");
+
+      let allRecords: ApiAttendanceRecord[] = [];
+      let page = 1;
+      let total = 0;
+
+      do {
+        const response = await apiAllAttendanceMonth(
+          selectedMonth,
+          page,
+          100
+        ) as ApiResponse;
+
+        if (!response.success) {
+          throw new Error("Unable to fetch monthly attendance");
+        }
+
+        const pageRecords = response.data || [];
+
+      allRecords = [...allRecords, ...pageRecords];
+      total = response.total || 0;
+
+      if (pageRecords.length === 0) break;
+
+      page++;
+
+      } while (allRecords.length < total);
+
+      setApiRecords(allRecords);
+
+    } catch (error) {
+      setApiRecords([]);
+      setFetchError(
+        error instanceof Error
+          ? error.message
+          : "Unable to fetch monthly attendance"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    fetchMonthlyData();
+  }, [fetchMonthlyData]);
+
+  // All calendar dates in selected month
+  const keys = useMemo(() => {
+    return Array.from(
+      { length: daysInMonth(year, month) },
+      (_, index) => {
+        const day = String(index + 1).padStart(2, "0");
+        return `${selectedMonth}-${day}`;
+      }
+    );
+  }, [year, month, selectedMonth]);
+
   const size = isMobile ? 7 : 15;
   const todayIdx = keys.indexOf(ctx.today);
   const selIdx = keys.indexOf(date);
-  // Default window: the one holding the selected date (or today). The arrows
-  // override it until the month, date or screen size changes — no effect needed.
   const focus = selIdx >= 0 ? selIdx : todayIdx >= 0 ? todayIdx : 0;
-  const defaultStart = isMobile ? Math.floor(focus / 7) * 7 : focus >= 15 ? 15 : 0;
+  const defaultStart = isMobile
+    ? Math.floor(focus / 7) * 7
+    : focus >= 15 ? 15 : 0;
+
   const windowKey = `${year}-${month}|${date}|${isMobile}`;
-  const [nav, setNav] = useState<{ key: string; start: number } | null>(null);
-  const start = nav && nav.key === windowKey ? nav.start : defaultStart;
+
+  const [nav, setNav] = useState<{
+    key: string;
+    start: number;
+  } | null>(null);
+
+  const start =
+    nav && nav.key === windowKey ? nav.start : defaultStart;
 
   const windowKeys = keys.slice(start, start + size);
   const canPrev = start > 0;
   const canNext = start + size < keys.length;
+
   const shiftWindow = (dir: 1 | -1) => {
     if (dir === -1 && !canPrev) {
       const d = new Date(year, month - 1, 1);
       setMonth(d.getFullYear(), d.getMonth());
       return;
     }
+
     if (dir === 1 && !canNext) {
       const d = new Date(year, month + 1, 1);
-      if (d <= fromKey(ctx.today)) setMonth(d.getFullYear(), d.getMonth());
+      if (d <= fromKey(ctx.today)) {
+        setMonth(d.getFullYear(), d.getMonth());
+      }
       return;
     }
-    setNav({ key: windowKey, start: Math.max(0, Math.min(keys.length - 1, start + dir * size)) });
+
+    setNav({
+      key: windowKey,
+      start: Math.max(
+        0,
+        Math.min(keys.length - 1, start + dir * size)
+      ),
+    });
   };
 
-  const rows = useMemo(() => applyFilters(employees, { ...filters, status: "" }), [employees, filters, applyFilters]);
-  const monthStats = useMemo(() => new Map(rows.map((e) => [e.id, employeeMonth(e, year, month, ctx)])), [rows, year, month, ctx]);
-  const paged = usePaged(rows, perPage, `${year}-${month}|${JSON.stringify(filters)}`);
+  // Group API records by employee and date
+  const employees = useMemo(() => {
+    const map = new Map<string, any>();
 
-  const avg = useMemo(() => monthAverages(rows, year, month, ctx), [rows, year, month, ctx]);
+    for (const record of apiRecords) {
+      const id = record.employeeId;
+
+      if (!map.has(id)) {
+        map.set(id, {
+          id,
+          name: record.name || id,
+          department: record.department || "",
+          designation: record.designation || "",
+          photoUrl: record.photoUrl || "",
+          employmentType: "",
+          records: Array.from({ length: keys.length }, () => ({
+            status: "",
+            checkIn: null,
+            checkOut: null,
+            source: "",
+          })),
+        });
+      }
+
+      const employee = map.get(id);
+      const dayIndex =
+        Number(record.dateKey.slice(8, 10)) - 1;
+
+      if (dayIndex < 0 || dayIndex >= keys.length) continue;
+
+      employee.records[dayIndex] = {
+        ...record,
+        status: normalizeStatus(record.status),
+        checkIn: record.checkIn || null,
+        checkOut: record.checkOut || null,
+      };
+    }
+
+    return Array.from(map.values());
+  }, [apiRecords, keys]);
+
+  // Filter only data returned by the API
+  const departments = useMemo(
+    () => [
+      ...new Set(
+        employees
+          .map((e) => e.department)
+          .filter(Boolean)
+      ),
+    ],
+    [employees]
+  );
+
+  const rows = useMemo(() => {
+    const search = filters.q.trim().toLowerCase();
+
+    return employees.filter((e) => {
+      const departmentMatch =
+        !filters.dept || e.department === filters.dept;
+
+      const searchMatch =
+        !search ||
+        e.name.toLowerCase().includes(search) ||
+        e.id.toLowerCase().includes(search);
+
+      return departmentMatch && searchMatch;
+    });
+  }, [employees, filters]);
+
+  // Monthly totals derived from fetched records
+  const monthStats = useMemo(() => {
+    return new Map(
+      rows.map((employee) => {
+        const records = employee.records;
+
+        const count = (status: string) =>
+          records.filter((r: any) => r.status === status).length;
+
+        const present =
+          count("present") +
+          count("late") +
+          count("half-day");
+
+        const workingDays = records.filter(
+          (r: any) => r.status && r.status !== "weekly-off" &&
+            r.status !== "holiday"
+        ).length;
+
+        return [
+          employee.id,
+          {
+            records,
+            present,
+            workingDays,
+            absent: count("absent"),
+            late: count("late"),
+            leave: count("leave"),
+          },
+        ];
+      })
+    );
+  }, [rows]);
+
+  const paged = usePaged(
+    rows,
+    perPage,
+    `${year}-${month}|${JSON.stringify(filters)}`
+  );
+
   const total = rows.length;
 
-  const stats = (
-    <section className={cx(styles.stats, styles.stats5)}>
-      <StatCard icon={Users} color="#22a55b" soft="#e3f6ea" label="Total Employees" value={total} />
-      <StatCard
-        icon={UserCheck}
-        color="#22a55b"
-        soft="#e3f6ea"
-        label="Present (Avg.)"
-        value={avg.present}
-        badge={{ text: `${pct(avg.present, total)}%`, color: "#15803d", soft: "#e3f6ea" }}
-      />
-      <StatCard
-        icon={UserX}
-        color="#ef4444"
-        soft="#fde8e8"
-        label="Absent (Avg.)"
-        value={avg.absent}
-        badge={{ text: `${pct(avg.absent, total)}%`, color: "#dc2626", soft: "#fde8e8" }}
-      />
-      <StatCard
-        icon={CalendarClock}
-        color="#e0a526"
-        soft="#fef3dc"
-        label="Late (Avg.)"
-        value={avg.late}
-        badge={{ text: `${pct(avg.late, total)}%`, color: "#b7791f", soft: "#fef3dc" }}
-      />
-      <StatCard
-        icon={Plane}
-        color="#6366f1"
-        soft="#e9e8fd"
-        label="On Leave (Avg.)"
-        value={avg.leave}
-        badge={{ text: `${pct(avg.leave, total)}%`, color: "#4f46e5", soft: "#e9e8fd" }}
-      />
-    </section>
-  );
+  // Average status counts per employee
+  const avg = useMemo(() => {
+    if (!total) {
+      return { present: 0, absent: 0, late: 0, leave: 0 };
+    }
+
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let leave = 0;
+
+    monthStats.forEach((st) => {
+      present += st.present;
+      absent += st.absent;
+      late += st.late;
+      leave += st.leave;
+    });
+
+    return {
+      present: Number((present / total).toFixed(1)),
+      absent: Number((absent / total).toFixed(1)),
+      late: Number((late / total).toFixed(1)),
+      leave: Number((leave / total).toFixed(1)),
+    };
+  }, [monthStats, total]);
 
   const reset = () => {
     setFilters(EMPTY_FILTERS);
     setDraft(EMPTY_FILTERS);
   };
 
-  const rangeLabel = windowKeys.length ? `${fromKey(windowKeys[0]).getDate()}–${fromKey(windowKeys[windowKeys.length - 1]).getDate()}` : "";
+  const rangeLabel = windowKeys.length
+    ? `${fromKey(windowKeys[0]).getDate()}–${fromKey(
+        windowKeys[windowKeys.length - 1]
+      ).getDate()}`
+    : "";
+
+  const stats = (
+    <section className={cx(styles.stats, styles.stats5)}>
+      <StatCard icon={Users} color="#22a55b" soft="#e3f6ea"
+        label="Total Employees" value={total} />
+
+      <StatCard icon={UserCheck} color="#22a55b" soft="#e3f6ea"
+        label="Present (Avg.)" value={avg.present}
+        badge={{ text: `${pct(avg.present, total)}%`, color: "#15803d", soft: "#e3f6ea" }} />
+
+      <StatCard icon={UserX} color="#ef4444" soft="#fde8e8"
+        label="Absent (Avg.)" value={avg.absent}
+        badge={{ text: `${pct(avg.absent, total)}%`, color: "#dc2626", soft: "#fde8e8" }} />
+
+      <StatCard icon={CalendarClock} color="#e0a526" soft="#fef3dc"
+        label="Late (Avg.)" value={avg.late}
+        badge={{ text: `${pct(avg.late, total)}%`, color: "#b7791f", soft: "#fef3dc" }} />
+
+      <StatCard icon={Plane} color="#6366f1" soft="#e9e8fd"
+        label="On Leave (Avg.)" value={avg.leave}
+        badge={{ text: `${pct(avg.leave, total)}%`, color: "#4f46e5", soft: "#e9e8fd" }} />
+    </section>
+  );
+
+
+
+  // const stats = (
+  //   <section className={cx(styles.stats, styles.stats5)}>
+  //     <StatCard icon={Users} color="#22a55b" soft="#e3f6ea" label="Total Employees" value={total} />
+  //     <StatCard
+  //       icon={UserCheck}
+  //       color="#22a55b"
+  //       soft="#e3f6ea"
+  //       label="Present (Avg.)"
+  //       value={avg.present}
+  //       badge={{ text: `${pct(avg.present, total)}%`, color: "#15803d", soft: "#e3f6ea" }}
+  //     />
+  //     <StatCard
+  //       icon={UserX}
+  //       color="#ef4444"
+  //       soft="#fde8e8"
+  //       label="Absent (Avg.)"
+  //       value={avg.absent}
+  //       badge={{ text: `${pct(avg.absent, total)}%`, color: "#dc2626", soft: "#fde8e8" }}
+  //     />
+  //     <StatCard
+  //       icon={CalendarClock}
+  //       color="#e0a526"
+  //       soft="#fef3dc"
+  //       label="Late (Avg.)"
+  //       value={avg.late}
+  //       badge={{ text: `${pct(avg.late, total)}%`, color: "#b7791f", soft: "#fef3dc" }}
+  //     />
+  //     <StatCard
+  //       icon={Plane}
+  //       color="#6366f1"
+  //       soft="#e9e8fd"
+  //       label="On Leave (Avg.)"
+  //       value={avg.leave}
+  //       badge={{ text: `${pct(avg.leave, total)}%`, color: "#4f46e5", soft: "#e9e8fd" }}
+  //     />
+  //   </section>
+  // );
+
+  // const reset = () => {
+  //   setFilters(EMPTY_FILTERS);
+  //   setDraft(EMPTY_FILTERS);
+  // };
+
+  // const rangeLabel = windowKeys.length ? `${fromKey(windowKeys[0]).getDate()}–${fromKey(windowKeys[windowKeys.length - 1]).getDate()}` : "";
+
+
+
+
 
   const grid = (
     <div className={cx(styles.card, styles.registerCard)}>
@@ -277,6 +621,13 @@ export default function MonthlyView() {
               <MonthPicker variant="icon" />
             </div>
           )}
+
+
+          {loading && <p>Loading monthly attendance...</p>}
+
+        {fetchError && (
+          <p className="text-red-500">{fetchError}</p>
+        )}
 
           {grid}
 
