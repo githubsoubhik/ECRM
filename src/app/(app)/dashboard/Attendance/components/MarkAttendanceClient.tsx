@@ -119,6 +119,7 @@ const {
   breakStart,
   breakEnd,
   refreshAttendance,
+  
 } = useAttendance();
   
 
@@ -167,10 +168,25 @@ const {
 
   //console.log("currentUser-----------------------", currentUser, "------",employee);
 
-  const employeeId = currentUser.id;
+//  const employeeId = String(
+//   attendance?.employeeId ?? ''
+// ).trim();
 
 
+const employeeId = String(
+  currentUser?.id ??
+  attendance?.employeeId ??
+  ''
+).trim();
 
+
+  console.log("------------------------------------", employeeId)
+
+  useEffect(() => {
+  console.log('CURRENT USER:', currentUser);
+  console.log('TODAY ATTENDANCE:', attendance);
+  console.log('EMPLOYEE ID:', employeeId);
+}, [currentUser, attendance, employeeId]);
 
   const urlHandled = useRef(false);
 
@@ -478,8 +494,145 @@ const confirmCheckoutNow = async () => {
 
 
 
-  const submitAttendance = useCallback(
+//   const submitAttendance = useCallback(
+//   (capture: CaptureResult | null) => {
+//     setStage('verifying');
+
+//     const wait = (ms: number, fn: () => void) => {
+//       timers.current.push(setTimeout(fn, ms));
+//     };
+
+//     wait(700, () => setStage('matching'));
+
+//     wait(1800, async () => {
+//       try {
+//         if (capture) {
+//           const verification = verifyFaceDemo(
+//             capture.metrics,
+//             employeeId,
+//           );
+
+//           setResult(verification);
+
+//           if (!verification.ok) {
+//             setStage('failed');
+//             return;
+//           }
+//         }
+
+//         // Hook handles coordinates, POST, and GET refresh.
+//         await checkIn(capture?.dataUrl ?? null, employeeId);
+
+//         setNotice(
+//           `${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`
+//         );
+
+//         setStage('idle');
+//         setPhoto(null);
+//         setPendingCapture(null);
+//         setAutoStart(false);
+//         setActionLocked(false);
+
+//         afterCheckIn();
+//       } catch (error) {
+//         const message =
+//           error instanceof Error
+//             ? error.message
+//             : 'Unable to mark attendance';
+
+//         setResult({
+//           ok: false,
+//           confidence: 0,
+//           message,
+//           employee: null,
+//         });
+
+//         setNotice(message);
+//         setStage('failed');
+//       }
+//     });
+//   },
+//   [employee, checkIn, afterCheckIn]
+// );
+
+
+
+// const submitAttendance = useCallback(
+//   (capture: CaptureResult | null) => {
+//     if (!employeeId) {
+//       setNotice('Employee ID not found. Please refresh attendance.');
+//       setStage('failed');
+//       return;
+//     }
+
+//     setStage('verifying');
+
+//     const wait = (ms: number, fn: () => void) => {
+//       timers.current.push(setTimeout(fn, ms));
+//     };
+
+//     wait(700, () => setStage('matching'));
+
+//     wait(1800, async () => {
+//       try {
+//         if (capture) {
+//           const verification = verifyFaceDemo(
+//             capture.metrics,
+//             employeeId
+//           );
+
+//           setResult(verification);
+
+//           if (!verification.ok) {
+//             setStage('failed');
+//             setNotice(verification.message);
+//             return;
+//           }
+//         }
+
+//         // Use employee ID fetched from /today
+//         await checkIn(capture?.dataUrl ?? null, employeeId);
+
+//         setNotice(
+//           `${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`
+//         );
+
+//         setStage('idle');
+//         setPhoto(null);
+//         setPendingCapture(null);
+//         setAutoStart(false);
+//         setActionLocked(false);
+
+//         afterCheckIn();
+//       } catch (error) {
+//         const message =
+//           error instanceof Error
+//             ? error.message
+//             : 'Unable to mark attendance';
+
+//         setResult({
+//           ok: false,
+//           confidence: 0,
+//           message,
+//           employee: null,
+//         });
+
+//         setNotice(message);
+//         setStage('failed');
+//       }
+//     });
+//   },
+//   [employeeId, employee, checkIn, afterCheckIn]
+// );
+
+const submitAttendance = useCallback(
   (capture: CaptureResult | null) => {
+    if (!employeeId) {
+      setNotice('Employee ID not found. Please refresh and login again.');
+      setStage('failed');
+      return;
+    }
+
     setStage('verifying');
 
     const wait = (ms: number, fn: () => void) => {
@@ -493,7 +646,7 @@ const confirmCheckoutNow = async () => {
         if (capture) {
           const verification = verifyFaceDemo(
             capture.metrics,
-            employeeId,
+            employeeId
           );
 
           setResult(verification);
@@ -504,11 +657,10 @@ const confirmCheckoutNow = async () => {
           }
         }
 
-        // Hook handles coordinates, POST, and GET refresh.
         await checkIn(capture?.dataUrl ?? null, employeeId);
 
         setNotice(
-          `${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`
+          `${employee.name} checked in successfully`
         );
 
         setStage('idle');
@@ -518,6 +670,7 @@ const confirmCheckoutNow = async () => {
         setActionLocked(false);
 
         afterCheckIn();
+
       } catch (error) {
         const message =
           error instanceof Error
@@ -536,7 +689,7 @@ const confirmCheckoutNow = async () => {
       }
     });
   },
-  [employee, checkIn, afterCheckIn]
+  [employeeId, employee, checkIn, afterCheckIn]
 );
 
   const handleSubmit = useCallback(() => {

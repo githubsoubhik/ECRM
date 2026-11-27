@@ -55,23 +55,49 @@ export function useAttendance() {
   
   }, [refreshAttendance]);
 
+ 
   // Check in
+  // const checkIn = async (
+  //   photo: string | null,
+  //   employeeId: string
+  // ) => {
+  //   if(!employeeId){
+  //     console.log("employee Id missing "); 
+  //   }
+  //   const coords = await getCoords();
+
+  //   const response = await apiCheckIn(
+  //     photo,
+  //     employeeId,
+  //     coords
+  //   );
+
+  //   await refreshAttendance();
+
+  //   return response;
+  // };
+
+
   const checkIn = async (
-    photo: string | null,
-    employeeId: string
-  ) => {
-    const coords = await getCoords();
+  photo: string | null,
+  employeeId: string
+) => {
+  if (!employeeId) {
+    throw new Error('Employee ID is missing');
+  }
 
-    const response = await apiCheckIn(
-      photo,
-      employeeId,
-      coords
-    );
+  const coords = await getCoords();
 
-    await refreshAttendance();
+  const response = await apiCheckIn(
+    photo,
+    employeeId,
+    coords
+  );
 
-    return response;
-  };
+  await refreshAttendance();
+
+  return response;
+};
 
   // Check out
   const checkOut = async () => {
@@ -110,6 +136,7 @@ export function useAttendance() {
     breakEnd,
     refreshAttendance,
     refreshing,
+
 
   };
 }
