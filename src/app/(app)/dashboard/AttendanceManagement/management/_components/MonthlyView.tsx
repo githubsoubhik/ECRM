@@ -25,7 +25,8 @@ import {
   fmtTime,
   fromKey,
   pct,
-} from "@/app/data/attendanceData"
+  type AttStatus,
+} from "@/app/data/attendanceData";
 
 // import { EMPTY_FILTERS, useAtt, type Filters } from "./context";
 import {
@@ -68,7 +69,7 @@ interface ApiAttendanceRecord {
   department?: string;
   designation?: string;
   dateKey: string;
-  status: string;
+  status: AttStatus | string;
   checkIn?: string | null;
   checkOut?: string | null;
   photoUrl?: string;
@@ -82,11 +83,26 @@ interface ApiResponse {
   data: ApiAttendanceRecord[];
 }
 
-const normalizeStatus = (status?: string) =>
-  String(status || "")
+const normalizeStatus = (status?: string): AttStatus | null => {
+  const normalized = String(status || "")
     .trim()
     .toLowerCase()
     .replace(/[\s_]+/g, "-");
+
+  const allowed: AttStatus[] = [
+    "present",
+    "late",
+    "absent",
+    "leave",
+    "half-day",
+    "weekly-off",
+    "holiday",
+  ];
+
+  return allowed.includes(normalized as AttStatus)
+    ? (normalized as AttStatus)
+    : null;
+};
 
 export default function MonthlyView() {
   const {
@@ -252,7 +268,14 @@ export default function MonthlyView() {
 
       if (dayIndex < 0 || dayIndex >= keys.length) continue;
 
-      employee.records[dayIndex] = {
+      // employee.records[dayIndex] = {
+      //   ...record,
+      //   status: normalizeStatus(record.status),
+      //   checkIn: record.checkIn || null,
+      //   checkOut: record.checkOut || null,
+      // };
+
+        employee.records[dayIndex] = {
         ...record,
         status: normalizeStatus(record.status),
         checkIn: record.checkIn || null,
@@ -483,7 +506,11 @@ export default function MonthlyView() {
                   </td>
                   {windowKeys.map((k) => {
                     const r = st.records[fromKey(k).getDate() - 1];
-                    const m = r.status ? STATUS_META[r.status] : null;
+                const normalizedStatus = normalizeStatus(r.status);
+
+const m = normalizedStatus
+  ? STATUS_META[normalizedStatus]
+  : null;
                     return (
                       <td key={k} className={cx(styles.cDay, k === ctx.today && styles.cToday)}>
                         {m ? (

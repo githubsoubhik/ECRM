@@ -609,6 +609,49 @@ export function verifyFaceDemo(metrics: CaptureMetrics, employeeId: string): Ver
   };
 }
 
+// export function verifyFaceDemo(
+//   metrics: CaptureMetrics,
+//   employeeId: string,
+//   employee: Employee
+// ): VerificationResult {
+
+//   const exactEmployeeId = String(employeeId || "").trim();
+
+//   if (!exactEmployeeId) {
+//     return {
+//       ok: false,
+//       confidence: 0,
+//       message: "Employee ID is missing.",
+//       employee: null,
+//     };
+//   }
+
+//   // Demo frame-quality check only.
+//   const quality = frameQuality(metrics);
+
+//   if (!quality.ok) {
+//     return {
+//       ok: false,
+//       confidence: 0,
+//       message: quality.hint,
+//       employee: null,
+//     };
+//   }
+
+//   const score =
+//     Math.min(1, metrics.contrast / 60) * 0.6 +
+//     Math.min(1, metrics.brightness / 160) * 0.4;
+
+//   const confidence = Math.round((90 + score * 9.4) * 10) / 10;
+
+//   return {
+//     ok: true,
+//     confidence,
+//     message: `Demo verification successful for ${exactEmployeeId}.`,
+//     employee,
+//   };
+// }
+
 /* ------------------------------------------------------------------ */
 /* Team directory (used by the Team page)                              */
 /* ------------------------------------------------------------------ */

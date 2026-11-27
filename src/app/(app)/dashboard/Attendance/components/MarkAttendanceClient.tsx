@@ -132,6 +132,8 @@ const {
   //const selectedId = currentUser.id;
   const [employee, setEmployee] = useState<Employee>(currentUser);
 
+ 
+
 
   const [action, setAction] = useState<AttendanceAction>('check-in');
   const [stage, setStage] = useState<Stage>('idle');
@@ -162,6 +164,10 @@ const {
   useEffect(() => {
     setEmployee(currentUser);
   }, [currentUser]);
+
+  //console.log("currentUser-----------------------", currentUser, "------",employee);
+
+  const employeeId = currentUser.id;
 
 
 
@@ -487,7 +493,7 @@ const confirmCheckoutNow = async () => {
         if (capture) {
           const verification = verifyFaceDemo(
             capture.metrics,
-            employee.id
+            employeeId,
           );
 
           setResult(verification);
@@ -499,7 +505,7 @@ const confirmCheckoutNow = async () => {
         }
 
         // Hook handles coordinates, POST, and GET refresh.
-        await checkIn(capture?.dataUrl ?? null, employee.id);
+        await checkIn(capture?.dataUrl ?? null, employeeId);
 
         setNotice(
           `${employee.name} checked in successfully${capture ? '' : ' (no photo)'}`
